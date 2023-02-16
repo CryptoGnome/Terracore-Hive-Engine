@@ -7,14 +7,12 @@ require('dotenv').config();
 //connect to Webhook
 const hook = new Webhook(process.env.DISCORD_WEBHOOK);
 
-
 //connect to mongodb
 const MongoClient = mongodb.MongoClient;
 const url = process.env.MONGO_URL;
 const dbName = 'terracore';
 const SYMBOL = 'SCRAP';
 const wif = process.env.ACTIVE_KEY;
-
 
 
 //find node to use
@@ -285,9 +283,6 @@ async function contribute(username, quantity) {
 }
 
 
-
- 
-
 var lastevent = Date.now();
 //aysncfunction to start listening for events
 async function listen() {
@@ -363,8 +358,8 @@ lastevent = Date.now();
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 15000) {
-        console.log('No events received in 15 seconds, shutting down so pm2 can restart');
+    if (Date.now() - lastevent > 30000) {
+        console.log('No events received in 30 seconds, shutting down so pm2 can restart');
         process.exit();
     }
 }, 1000);
