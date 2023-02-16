@@ -351,7 +351,7 @@ async function listen() {
 
 
 
-//test
+//testwebhook
 //track last event and reset claims every 15 seconds
 listen();
 lastevent = Date.now();
