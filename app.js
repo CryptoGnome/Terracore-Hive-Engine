@@ -334,6 +334,17 @@ async function listen() {
                     }
 
                 }
+                else if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'stake') {
+                    //convert payload to json
+                    var payload = JSON.parse(res['transactions'][i]['payload']);
+
+                    //check if symbol is scrap
+                    if (payload.symbol == 'SCRAP') {
+                        //send webhook about who is staking and how much
+                        webhook('New Stake', res['transactions'][i]['sender'] + ' has staked ' + payload.quantity + ' ' + payload.symbol, '#86fc86');
+                    }
+
+                }
             }
         }
         catch(err){
