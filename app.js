@@ -386,11 +386,11 @@ async function listen() {
                 else if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'stake') {
                     //convert payload to json
                     var payload = JSON.parse(res['transactions'][i]['payload']);
-                    var sender = res['transactions'][i]['sender'];
-                    var qty = payload.quantity;
 
                     //check if symbol is scrap
                     if (payload.symbol == 'SCRAP') {
+                        var sender = res['transactions'][i]['sender'];
+                        var qty = payload.quantity;
                         var isComplete = checkTx(res['transactions'][i].transactionId);
                         //wait for promise from isComplete then log
                         isComplete.then(function(result) {
