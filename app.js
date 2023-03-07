@@ -399,7 +399,7 @@ async function listen() {
                                 return
                             }     
                             else{
-                                webhook('New Stake', sender + ' has staked ' + payload.quantity + ' ' + payload.symbol, '#86fc86');
+                                webhook('New Stake', sender + ' has staked ' + payload.quantity + ' ' + payload.symbol, '#FFA500');
                             }                    
                         });
                       
