@@ -1,5 +1,5 @@
 const SSC = require('sscjs');
-const mongodb = require('mongodb');
+const { MongoClient } = require('mongodb');
 const fetch = require('node-fetch');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 require('dotenv').config();
@@ -7,13 +7,13 @@ require('dotenv').config();
 //connect to Webhook
 const hook = new Webhook(process.env.DISCORD_WEBHOOK);
 
-//connect to mongodb
-const MongoClient = mongodb.MongoClient;
+
 const url = process.env.MONGO_URL;
 const dbName = 'terracore';
 const SYMBOL = 'SCRAP';
 const wif = process.env.ACTIVE_KEY;
 
+var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 7000 });
 
 //find node to use
 const nodes = ["https://herpc.dtools.dev", "https://engine.rishipanthee.com", "https://api.primersion.com"];
@@ -147,7 +147,6 @@ async function scrapStaked(username) {
 }
 
 async function storeHash(hash, username) {
-    let client = await MongoClient.connect(url, { useNewUrlParser: true });
     let db = client.db(dbName);
     let collection = db.collection('hashes');
     let result = await collection.insertOne({hash: hash, username: username, time: Date.now()});
@@ -155,7 +154,6 @@ async function storeHash(hash, username) {
 }
 //defense upgrade
 async function defense(username, quantity) {
-    let client = await MongoClient.connect(url, { useNewUrlParser: true });
     let db = client.db(dbName);
     let collection = db.collection('players');
 
@@ -181,7 +179,6 @@ async function defense(username, quantity) {
 }
 //engineering upgrade
 async function engineering(username, quantity) {
-    let client = await MongoClient.connect(url, { useNewUrlParser: true });
     let db = client.db(dbName);
     let collection = db.collection('players');
 
@@ -211,7 +208,6 @@ async function engineering(username, quantity) {
 }
 //health upgrade
 async function health(username, quantity) {
-    let client = await MongoClient.connect(url, { useNewUrlParser: true });
     let db = client.db(dbName);
     let collection = db.collection('players');
     let user = await collection.findOne({ username : username });
@@ -229,7 +225,6 @@ async function health(username, quantity) {
 }
 //damage upgrade
 async function damage(username, quantity) {
-    let client = await MongoClient.connect(url, { useNewUrlParser: true });
     let db = client.db(dbName);
     let collection = db.collection('players');
     let user = await collection.findOne({ username : username });
@@ -282,7 +277,6 @@ async function checkTx(txId) {
 
 //contributor upgrade
 async function contribute(username, quantity, txId) {
-    let client = await MongoClient.connect(url, { useNewUrlParser: true });
     let db = client.db(dbName);
     let collection = db.collection('players');
     let user = await collection.findOne({username: username});
