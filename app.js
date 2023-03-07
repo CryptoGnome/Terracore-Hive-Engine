@@ -227,7 +227,6 @@ async function health(username, quantity) {
         webhook('Health Upgrade', username + ' has upgraded their health to ' + (user.health + 10), '#86fc86');
     }
 }
-
 //damage upgrade
 async function damage(username, quantity) {
     let client = await MongoClient.connect(url, { useNewUrlParser: true });
@@ -248,8 +247,41 @@ async function damage(username, quantity) {
     }
 }
 
+//function to check if tx is complete
+async function checkTx(txId) {
+    //convert above to fetch
+    const response = await fetch("https://api.hive-engine.com/rpc/blockchain", {
+        method: "POST",
+        headers:{'Content-type' : 'application/json'},
+        body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "getTransactionInfo",
+            params: {
+                txid: txId
+            },
+            "id": 1,
+        })
+    });
+    const data = await response.json()
+    console.log(data);
+    //parse json from logs: '{"errors":["overdrawn balance"]}'
+    var logs = JSON.parse(data.result.logs);
+    //check if errors exist
+    if (logs.errors) {
+        console.log('error found');
+        return false;
+    }
+    else if  (data.result) {
+        return true;
+    } 
+    else {
+        return false;
+    }
+}
+
+
 //contributor upgrade
-async function contribute(username, quantity) {
+async function contribute(username, quantity, txId) {
     let client = await MongoClient.connect(url, { useNewUrlParser: true });
     let db = client.db(dbName);
     let collection = db.collection('players');
@@ -259,6 +291,13 @@ async function contribute(username, quantity) {
     if (!user) {
         return;
     }
+
+    var txComplete = await checkTx(txId);
+
+    if (!txComplete) {
+        return;
+    }
+
 
     let qty = parseFloat(quantity);
     //add quantity to favor
@@ -282,7 +321,6 @@ async function contribute(username, quantity) {
 
 }
 
-
 var lastevent = Date.now();
 //aysncfunction to start listening for events
 async function listen() {
@@ -296,8 +334,10 @@ async function listen() {
             for (var i = 0; i < res['transactions'].length; i++) {
                 //check if contract is token
                 if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'transfer') {
+                    //console.log(res['transactions'][i]);
                     //convert payload to json
                     var payload = JSON.parse(res['transactions'][i]['payload']);
+
                     //check if to is "terracore"
                     if (payload.to == 'terracore' && payload.symbol == 'SCRAP') {
                         //get memo 
@@ -305,31 +345,46 @@ async function listen() {
                             event: payload.memo.split('-')[0],
                             hash: payload.memo.split('-')[1],
                         }
-
                         var from = res['transactions'][i]['sender'];
                         var quantity = payload.quantity;
+                        var tx = res['transactions'][i]
 
-                        //log tx
-                        console.log(res['transactions'][i]);
-                        //check if memo is engineering
-                        if (memo.event == 'engineering'){
-                            engineering(from, quantity);
-                        }
-                        else if (memo.event == 'health'){
-                            health(from, quantity);
-                        }
-                        else if (memo.event == 'damage'){
-                            damage(from, quantity);
-                        }
-                        else if (memo.event == 'defense'){
-                            defense(from, quantity);
-                        }
-                        else if (memo.event == 'contribute'){
-                            contribute(from, quantity);
-                        }
-                        else{
-                            console.log('Unknown event');
-                        }
+                        var isComplete = checkTx(res['transactions'][i].transactionId);
+                        //wait for promise from isComplete then log
+                        isComplete.then(function(result) {
+                            console.log(result);
+                            if (!result) {
+                                //no action
+                                return
+                            }     
+                            else{                          
+                                //check if memo is engineering
+                                if (memo.event == 'terracore_engineering'){
+                                    engineering(from, quantity);
+                                    return;
+                                }
+                                else if (memo.event == 'terracore_health'){
+                                    health(from, quantity);
+                                    return;
+                                }
+                                else if (memo.event == 'terracore_damage'){
+                                    damage(from, quantity);
+                                    return;
+                                }
+                                else if (memo.event == 'terracore_defense'){
+                                    defense(from, quantity);
+                                    return;
+                                }
+                                else if (memo.event == 'terracore_contribute'){
+                                    contribute(from, quantity, payload.transactionId);
+                                    return;
+                                }
+                                else{
+                                    console.log('Unknown event');
+                                    return;
+                                }
+                            }                    
+                        });
                         
                     }
 
@@ -337,12 +392,25 @@ async function listen() {
                 else if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'stake') {
                     //convert payload to json
                     var payload = JSON.parse(res['transactions'][i]['payload']);
+                    var sender = res['transactions'][i]['sender'];
 
                     //check if symbol is scrap
                     if (payload.symbol == 'SCRAP') {
-                        //send webhook about who is staking and how much
-                        webhook('New Stake', res['transactions'][i]['sender'] + ' has staked ' + payload.quantity + ' ' + payload.symbol, '#86fc86');
+                        var isComplete = checkTx(res['transactions'][i].transactionId);
+                        //wait for promise from isComplete then log
+                        isComplete.then(function(result) {
+                            console.log(result);
+                            if (!result) {
+                                //no action
+                                return
+                            }     
+                            else{
+                                webhook('New Stake', sender + ' has staked ' + payload.quantity + ' ' + payload.symbol, '#86fc86');
+                            }                    
+                        });
+                      
                     }
+
 
                 }
             }
@@ -374,3 +442,9 @@ setInterval(function() {
         process.exit();
     }
 }, 1000);
+
+
+
+
+
+
