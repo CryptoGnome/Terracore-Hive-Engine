@@ -387,6 +387,7 @@ async function listen() {
                     //convert payload to json
                     var payload = JSON.parse(res['transactions'][i]['payload']);
                     var sender = res['transactions'][i]['sender'];
+                    var qty = payload.quantity;
 
                     //check if symbol is scrap
                     if (payload.symbol == 'SCRAP') {
@@ -399,7 +400,7 @@ async function listen() {
                                 return
                             }     
                             else{
-                                webhook('New Stake', sender + ' has staked ' + payload.quantity + ' ' + payload.symbol, '#FFA500');
+                                webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
                             }                    
                         });
                       
