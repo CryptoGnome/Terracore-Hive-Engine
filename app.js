@@ -19,6 +19,7 @@ var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, use
 const nodes = ["https://herpc.dtools.dev", "https://engine.rishipanthee.com", "https://api.primersion.com"];
 var node;
 
+
 async function findNode() {
     //try each node until one works, just try for a response
     for (let i = 0; i < nodes.length; i++) {
@@ -276,7 +277,7 @@ async function checkTx(txId) {
 
 
 //contributor upgrade
-async function contribute(username, quantity, txId) {
+async function contribute(username, quantity) {
     let db = client.db(dbName);
     let collection = db.collection('players');
     let user = await collection.findOne({username: username});
@@ -285,13 +286,6 @@ async function contribute(username, quantity, txId) {
     if (!user) {
         return;
     }
-
-    var txComplete = await checkTx(txId);
-
-    if (!txComplete) {
-        return;
-    }
-
 
     let qty = parseFloat(quantity);
     //add quantity to favor
@@ -370,7 +364,7 @@ async function listen() {
                                     return;
                                 }
                                 else if (memo.event == 'terracore_contribute'){
-                                    contribute(from, quantity, payload.transactionId);
+                                    contribute(from, quantity);
                                     return;
                                 }
                                 else{
@@ -392,7 +386,8 @@ async function listen() {
                         var sender = res['transactions'][i]['sender'];
                         var qty = payload.quantity;
                         var isComplete = checkTx(res['transactions'][i].transactionId);
-                        //wait for promise from isComplete then log
+                        //wait for promise from isComplete then log if it is not complete try again 3 times
+                        var nonce = 0;
                         isComplete.then(function(result) {
                             console.log(result);
                             if (!result) {
@@ -403,6 +398,7 @@ async function listen() {
                                 webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
                             }                    
                         });
+
                       
                     }
 
