@@ -243,38 +243,43 @@ async function damage(username, quantity) {
     }
 }
 
+
 //function to check if tx is complete
 async function checkTx(txId) {
-    //convert above to fetch
-    const response = await fetch("https://api.hive-engine.com/rpc/blockchain", {
-        method: "POST",
-        headers:{'Content-type' : 'application/json'},
-        body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "getTransactionInfo",
-            params: {
-                txid: txId
-            },
-            "id": 1,
-        })
-    });
-    const data = await response.json()
-    console.log(data);
-    //parse json from logs: '{"errors":["overdrawn balance"]}'
-    var logs = JSON.parse(data.result.logs);
-    //check if errors exist
-    if (logs.errors) {
-        console.log('error found');
-        return false;
+    //try to see if tx is complete catch orders and try at least 3 times
+    for (let i = 0; i < 3; i++) {
+        const response = await fetch("https://api.hive-engine.com/rpc/blockchain", {
+            method: "POST",
+            headers:{'Content-type' : 'application/json'},
+            body: JSON.stringify({
+                jsonrpc: "2.0",
+                method: "getTransactionInfo",
+                params: {
+                    txid: txId
+                },
+                "id": 1,
+            })
+        });
+        const data = await response.json()
+        console.log(data);
+        //parse json from logs: '{"errors":["overdrawn balance"]}'
+        var logs = JSON.parse(data.result.logs);
+        //check if errors exist
+        if (logs.errors) {
+            console.log('error found');
+            return false;
+        }
+        else if  (data.result) {
+            return true;
+        } 
+        else {
+            //return false;
+            //do nothing
+        }
     }
-    else if  (data.result) {
-        return true;
-    } 
-    else {
-        return false;
-    }
-}
 
+    return false;
+}
 
 //contributor upgrade
 async function contribute(username, quantity) {
@@ -336,7 +341,9 @@ async function listen() {
                         var from = res['transactions'][i]['sender'];
                         var quantity = payload.quantity;
                         var tx = res['transactions'][i]
+                        console.log(res['transactions'][i]);
 
+                    
                         var isComplete = checkTx(res['transactions'][i].transactionId);
                         //wait for promise from isComplete then log
                         isComplete.then(function(result) {
