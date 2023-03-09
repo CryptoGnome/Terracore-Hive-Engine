@@ -2,6 +2,7 @@ const SSC = require('sscjs');
 const { MongoClient } = require('mongodb');
 const fetch = require('node-fetch');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
+const { api } = require('@hiveio/hive-js');
 require('dotenv').config();
 
 //connect to Webhook
@@ -16,7 +17,7 @@ const wif = process.env.ACTIVE_KEY;
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 7000 });
 
 //find node to use
-const nodes = ["https://herpc.dtools.dev", "https://engine.rishipanthee.com", "https://api.primersion.com"];
+const nodes = ["https://herpc.dtools.dev", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
 var node;
 
 
@@ -239,8 +240,10 @@ async function damage(username, quantity) {
 //function to check if tx is complete
 async function checkTx(txId) {
     //try to see if tx is complete catch orders and try at least 3 times
-    for (let i = 0; i < 3; i++) {
-        const response = await fetch("https://api.hive-engine.com/rpc/blockchain", {
+    var apis = ["https://api.hive-engine.com/rpc/blockchain", "https://api2.hive-engine.com/rpc/blockchain", "https://engine.rishipanthee.com/rpc/blockchain", "https://herpc.dtools.dev/rpc/blockchain", "https://api.primersion.com/rpc/blockchain", "https://herpc.actifit.io/rpc/blockchain"];
+
+    for (let i = 0; i < apis.length; i++) {
+        const response = await fetch(apis[i], {
             method: "POST",
             headers:{'Content-type' : 'application/json'},
             body: JSON.stringify({
