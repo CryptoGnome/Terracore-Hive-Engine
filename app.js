@@ -289,10 +289,6 @@ async function contribute(username, quantity) {
     await collection.updateOne({username: username}, {$inc: {favor: qty}});
     //load stats collection
     let stats = db.collection('stats');
-    //todays date
-    var date = new Date().toISOString().slice(0, 10);
-    //add qty to current favor
-    await stats.updateOne({date: date}, {$inc: {currentFavor: qty}});
     await stats.updateOne({date: "global"}, {$inc: {currentFavor: qty}});
 
     //webhook
