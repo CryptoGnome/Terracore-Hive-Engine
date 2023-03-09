@@ -207,23 +207,7 @@ async function engineering(username, quantity) {
     }
 
 }
-//health upgrade
-async function health(username, quantity) {
-    let db = client.db(dbName);
-    let collection = db.collection('players');
-    let user = await collection.findOne({ username : username });
 
-    //check if user exists
-    if (!user) {
-        return;
-    }
-    let cost = Math.pow(user.health/10, 2);
-
-    if (quantity == cost){
-        let result = await collection.updateOne({username: username}, {$inc: {health: 10}});
-        webhook('Health Upgrade', username + ' has upgraded their health to ' + (user.health + 10), '#86fc86');
-    }
-}
 //damage upgrade
 async function damage(username, quantity) {
     let db = client.db(dbName);
@@ -234,13 +218,21 @@ async function damage(username, quantity) {
     if (!user) {
         return;
     }
+    while (true) {
+        let cost = Math.pow(user.damage/10, 2);
 
-    let cost = Math.pow(user.damage/10, 2);
+        if (quantity == cost){
+            let result = await collection.updateOne({username: username}, {$inc: {damage: 10}});
+            webhook('Damage Upgrade', username + ' has upgraded their damage to ' + (user.damage + 10), '#86fc86');
+        }
 
-    if (quantity == cost){
-        let result = await collection.updateOne({username: username}, {$inc: {damage: 10}});
-        webhook('Damage Upgrade', username + ' has upgraded their damage to ' + (user.damage + 10), '#86fc86');
+        //check if update was successful
+        let userCheck = await collection.findOne({ username : username });
+        if (userCheck.damage == user.damage + 10) {
+            break;
+        }
     }
+
 }
 
 
