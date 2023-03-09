@@ -290,11 +290,11 @@ async function contribute(username, quantity) {
     let startFavor = user.favor;
 
     while (true) {
-        let qty = parseFloat(quantity);
+        var qty = parseFloat(quantity);
         //add quantity to favor
         await collection.updateOne({username: username}, {$inc: {favor: qty}});
         //load stats collection
-        let stats = db.collection('stats');
+        var stats = db.collection('stats');
         await stats.updateOne({date: "global"}, {$inc: {currentFavor: qty}});
         
         //check if update was successful
@@ -344,7 +344,7 @@ async function listen() {
                         var isComplete = checkTx(res['transactions'][i].transactionId);
                         //wait for promise from isComplete then log
                         isComplete.then(function(result) {
-                            console.log(result);
+                            //console.log(result);
                             if (!result) {
                                 //no action
                                 return
