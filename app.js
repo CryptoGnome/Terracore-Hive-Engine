@@ -283,14 +283,25 @@ async function contribute(username, quantity) {
     if (!user) {
         return;
     }
+    //check starting favor
+    let startFavor = user.favor;
 
-    let qty = parseFloat(quantity);
-    //add quantity to favor
-    await collection.updateOne({username: username}, {$inc: {favor: qty}});
-    //load stats collection
-    let stats = db.collection('stats');
-    await stats.updateOne({date: "global"}, {$inc: {currentFavor: qty}});
-
+    while (true) {
+        let qty = parseFloat(quantity);
+        //add quantity to favor
+        await collection.updateOne({username: username}, {$inc: {favor: qty}});
+        //load stats collection
+        let stats = db.collection('stats');
+        await stats.updateOne({date: "global"}, {$inc: {currentFavor: qty}});
+        
+        //check if update was successful
+        collection = db.collection('players');
+        //check if new favor is correct
+        var userCheck = await collection.findOne({ username : username });
+        if (userCheck.favor == startFavor + qty) {
+            break;
+        }
+    }
     //webhook
     webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
 
