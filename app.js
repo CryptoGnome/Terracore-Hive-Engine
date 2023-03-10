@@ -170,9 +170,6 @@ async function defense(username, quantity) {
             await collection.updateOne({username : username}, {$inc: {defense: 10}});
             webhook('Upgrade', username + ' upgraded defense to ' + (user.defense + 10), '#86fc86');
         }
-        else {
-            return;
-        }
 
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
@@ -198,13 +195,9 @@ async function engineering(username, quantity) {
         var newrate = user.minerate + (user.minerate * 0.1);
 
         if (quantity == cost){
-            //update user   
             await collection.updateOne({username: username}, {$inc: {engineering: 1}});
             await collection.updateOne({username: username }, {$set: {minerate: newrate}});
             webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
-        }
-        else {
-            break;
         }
 
         //check if update was successful
@@ -230,11 +223,8 @@ async function damage(username, quantity) {
         let cost = Math.pow(user.damage/10, 2);
 
         if (quantity == cost){
-            await collection.updateOne({username: username}, {$inc: {damage: 10}});
+            let result = await collection.updateOne({username: username}, {$inc: {damage: 10}});
             webhook('Damage Upgrade', username + ' has upgraded their damage to ' + (user.damage + 10), '#86fc86');
-        }
-        else {
-            break;
         }
 
         //check if update was successful
@@ -363,28 +353,22 @@ async function listen() {
                                 //check if memo is engineering
                                 if (memo.event == 'terracore_engineering'){
                                     engineering(from, quantity);
-                                    setTimeout(function(){engineering(from, quantity)}, 5000);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_health'){
                                     health(from, quantity);
-                                    setTimeout(function(){health(from, quantity)}, 5000);
                                     return;
-                
                                 }
                                 else if (memo.event == 'terracore_damage'){
                                     damage(from, quantity);
-                                    setTimeout(function(){damage(from, quantity)}, 5000);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_defense'){
                                     defense(from, quantity);
-                                    setTimeout(function(){defense(from, quantity)}, 5000);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_contribute'){
                                     contribute(from, quantity);
-                                    setTimeout(function(){contribute(from, quantity)}, 5000);
                                     return;
                                 }
                                 else{
@@ -406,6 +390,8 @@ async function listen() {
                         var sender = res['transactions'][i]['sender'];
                         var qty = payload.quantity;
                         var isComplete = checkTx(res['transactions'][i].transactionId);
+                        //wait for promise from isComplete then log if it is not complete try again 3 times
+                        var nonce = 0;
                         isComplete.then(function(result) {
                             console.log(result);
                             if (!result) {
