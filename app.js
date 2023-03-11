@@ -314,9 +314,10 @@ async function contribute(username, quantity) {
         if (userCheck.favor == startFavor + qty) {
             break;
         }
+        else{
+            webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
+        }
     }
-    //webhook
-    webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
 
 
 }
@@ -384,7 +385,7 @@ async function listen() {
                                 }
                                 else if (memo.event == 'terracore_contribute'){
                                     contribute(from, quantity);
-                                    setTimeout(function(){contribute(from, quantity)}, 5000);
+                                    //setTimeout(function(){contribute(from, quantity)}, 5000);
                                     return;
                                 }
                                 else{

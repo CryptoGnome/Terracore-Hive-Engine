@@ -1,2 +1,8 @@
 .env
 node_modules
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/Terracore-Hive-Engine.iml
+.idea/vcs.xml
+.idea/workspace.xml
