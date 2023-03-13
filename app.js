@@ -350,6 +350,7 @@ async function listen() {
                         var from = res['transactions'][i]['sender'];
                         var quantity = payload.quantity;
                         var tx = res['transactions'][i]
+                        var hashStore = payload.memo;
                         console.log(res['transactions'][i]);
 
                     
@@ -365,28 +366,28 @@ async function listen() {
                                 //check if memo is engineering
                                 if (memo.event == 'terracore_engineering'){
                                     engineering(from, quantity);
-                                    storeHash(payload.memo, from);
+                                    storeHash(hashStore, from);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_health'){
                                     health(from, quantity);
-                                    storeHash(payload.memo, from);
+                                    storeHash(hashStore, from);
                                     return;
                 
                                 }
                                 else if (memo.event == 'terracore_damage'){
                                     damage(from, quantity);
-                                    storeHash(payload.memo, from);
+                                    storeHash(hashStore, from);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_defense'){
                                     defense(from, quantity);
-                                    storeHash(payload.memo, from);
+                                    storeHash(hashStore, from);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_contribute'){
                                     contribute(from, quantity);
-                                    storeHash(payload.memo, from);
+                                    storeHash(hashStore, from);
                                     return;
                                 }
                                 else{
@@ -408,6 +409,7 @@ async function listen() {
                         var sender = res['transactions'][i]['sender'];
                         var qty = payload.quantity;
                         var isComplete = checkTx(res['transactions'][i].transactionId);
+                        var hashStore = payload.memo;
                         isComplete.then(function(result) {
                             console.log(result);
                             if (!result) {
@@ -416,7 +418,7 @@ async function listen() {
                             }     
                             else{
                                 webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
-                                storeHash(payload.memo, from);
+                                storeHash(hashStore, sender);
                                 return;
                             }                    
                         });
