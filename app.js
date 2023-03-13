@@ -152,7 +152,7 @@ async function scrapStaked(username) {
 async function storeHash(hash, username) {
     let db = client.db(dbName);
     let collection = db.collection('hashes');
-    let result = await collection.insertOne({hash: hash, username: username, time: Date.now()});
+    await collection.insertOne({hash: hash, username: username, time: Date.now()});
     console.log('Hash ' + hash + ' stored');
 }
 //defense upgrade
@@ -365,23 +365,28 @@ async function listen() {
                                 //check if memo is engineering
                                 if (memo.event == 'terracore_engineering'){
                                     engineering(from, quantity);
+                                    storeHash(payload.memo, from);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_health'){
                                     health(from, quantity);
+                                    storeHash(payload.memo, from);
                                     return;
                 
                                 }
                                 else if (memo.event == 'terracore_damage'){
                                     damage(from, quantity);
+                                    storeHash(payload.memo, from);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_defense'){
                                     defense(from, quantity);
+                                    storeHash(payload.memo, from);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_contribute'){
                                     contribute(from, quantity);
+                                    storeHash(payload.memo, from);
                                     return;
                                 }
                                 else{
@@ -411,6 +416,8 @@ async function listen() {
                             }     
                             else{
                                 webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
+                                storeHash(payload.memo, from);
+                                return;
                             }                    
                         });
 
