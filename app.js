@@ -39,7 +39,6 @@ async function findNode() {
 }
 
 async function webhook(title, message, color) {
-    
     const embed = new MessageBuilder()
         .setTitle(title)
         .addField('Message: ', message, true)
@@ -50,6 +49,8 @@ async function webhook(title, message, color) {
     }
     catch (err) {
         console.log(chalk.red("Discord Webhook Error"));
+        //close to prevent infinite loop
+        process.exit(1);
     }
     
 }
@@ -246,7 +247,6 @@ async function damage(username, quantity) {
 
 }
 
-
 //function to check if tx is complete
 async function checkTx(txId) {
     //try to see if tx is complete catch orders and try at least 3 times
@@ -365,28 +365,23 @@ async function listen() {
                                 //check if memo is engineering
                                 if (memo.event == 'terracore_engineering'){
                                     engineering(from, quantity);
-                                    setTimeout(function(){engineering(from, quantity)}, 5000);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_health'){
                                     health(from, quantity);
-                                    setTimeout(function(){health(from, quantity)}, 5000);
                                     return;
                 
                                 }
                                 else if (memo.event == 'terracore_damage'){
                                     damage(from, quantity);
-                                    setTimeout(function(){damage(from, quantity)}, 5000);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_defense'){
                                     defense(from, quantity);
-                                    setTimeout(function(){defense(from, quantity)}, 5000);
                                     return;
                                 }
                                 else if (memo.event == 'terracore_contribute'){
                                     contribute(from, quantity);
-                                    //setTimeout(function(){contribute(from, quantity)}, 5000);
                                     return;
                                 }
                                 else{
