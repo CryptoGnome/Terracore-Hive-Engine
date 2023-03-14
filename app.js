@@ -75,14 +75,7 @@ async function defense(username, quantity) {
     while (true) {
         let cost = Math.pow(user.defense/10, 2);
         if (quantity == cost){
-            await collection.updateOne({username : username}, {$inc: {defense: 10}});
-            try {
-                await webhook('Upgrade', username + ' upgraded defense to ' + (user.defense + 10), '#86fc86');
-            }
-            catch (err) {
-                console.log(chalk.red("Discord Webhook Error"));
-                process.exit(1);
-            }
+            await collection.updateOne({username : username}, {$inc: {defense: 10}});      
         }
         else {
             return;
@@ -91,6 +84,7 @@ async function defense(username, quantity) {
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
         if (userCheck.defense == user.defense + 10) {
+            webhook('Upgrade', username + ' upgraded defense to ' + (user.defense + 10), '#86fc86');
             return;
         }
      
@@ -115,13 +109,6 @@ async function engineering(username, quantity) {
             //update user   
             await collection.updateOne({username: username}, {$inc: {engineering: 1}});
             await collection.updateOne({username: username }, {$set: {minerate: newrate}});
-            try{    
-                webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
-            }
-            catch (err) {
-                console.log(chalk.red("Discord Webhook Error"));
-                process.exit(1);
-            }
         }   
         else {
             return;
@@ -129,13 +116,13 @@ async function engineering(username, quantity) {
 
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
-        if (userCheck.engineering == user.engineering + 1 && userCheck.minerate == newrate) {
+        if (userCheck.engineering == (user.engineering + 1) && userCheck.minerate == newrate) {
+            webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
             return;
         }
     }
 
 }
-
 //damage upgrade
 async function damage(username, quantity) {
     let db = client.db(dbName);
@@ -151,13 +138,6 @@ async function damage(username, quantity) {
 
         if (quantity == cost){
             await collection.updateOne({username: username}, {$inc: {damage: 10}});
-            try {
-                await webhook('Upgrade', username + ' upgraded damage to ' + (user.damage + 10), '#86fc86');
-            }
-            catch (err) {
-                console.log(chalk.red("Discord Webhook Error"));
-                process.exit(1);
-            }
         }
         else {
             return;
@@ -166,9 +146,43 @@ async function damage(username, quantity) {
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
         if (userCheck.damage == user.damage + 10) {
+            webhook('Upgrade', username + ' upgraded damage to ' + (user.damage + 10), '#86fc86');
             return;
         }
     }
+
+}
+
+//contributor upgrade
+async function contribute(username, quantity) {
+    let db = client.db(dbName);
+    let collection = db.collection('players');
+    let user = await collection.findOne({username: username});
+
+    //check if user exists
+    if (!user) {
+        return;
+    }
+    //check starting favor
+    let startFavor = user.favor;
+
+    while (true) {
+        var qty = parseFloat(quantity);
+        //add quantity to favor
+        await collection.updateOne({username: username}, {$inc: {favor: qty}});
+        //load stats collection
+        var stats = db.collection('stats');
+        await stats.updateOne({date: "global"}, {$inc: {currentFavor: qty}});
+        
+        //check if update was successful
+        collection = db.collection('players');
+        //check if new favor is correct
+        var userCheck = await collection.findOne({ username : username });
+        if (userCheck.favor == startFavor + qty) {
+            webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
+        }
+    }
+
 
 }
 
@@ -211,48 +225,6 @@ async function checkTx(txId) {
     return false;
 }
 
-//contributor upgrade
-async function contribute(username, quantity) {
-    let db = client.db(dbName);
-    let collection = db.collection('players');
-    let user = await collection.findOne({username: username});
-
-    //check if user exists
-    if (!user) {
-        return;
-    }
-    //check starting favor
-    let startFavor = user.favor;
-
-    while (true) {
-        var qty = parseFloat(quantity);
-        //add quantity to favor
-        await collection.updateOne({username: username}, {$inc: {favor: qty}});
-        //load stats collection
-        var stats = db.collection('stats');
-        await stats.updateOne({date: "global"}, {$inc: {currentFavor: qty}});
-        
-        //check if update was successful
-        collection = db.collection('players');
-        //check if new favor is correct
-        var userCheck = await collection.findOne({ username : username });
-        if (userCheck.favor == startFavor + qty) {
-            try{
-                webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
-                return;
-            }
-            catch (err) {
-                console.log(chalk.red("Discord Webhook Error"));
-                process.exit(1);
-            }
-        }
-        else{
-            break;
-        }
-    }
-
-
-}
 
 var lastevent = Date.now();
 //aysncfunction to start listening for events
