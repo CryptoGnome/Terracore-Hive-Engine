@@ -38,6 +38,7 @@ async function findNode() {
     }
 }
 
+
 async function webhook(title, message, color) {
     const embed = new MessageBuilder()
         .setTitle(title)
@@ -169,7 +170,13 @@ async function defense(username, quantity) {
         let cost = Math.pow(user.defense/10, 2);
         if (quantity == cost){
             await collection.updateOne({username : username}, {$inc: {defense: 10}});
-            webhook('Upgrade', username + ' upgraded defense to ' + (user.defense + 10), '#86fc86');
+            try {
+                await webhook('Upgrade', username + ' upgraded defense to ' + (user.defense + 10), '#86fc86');
+            }
+            catch (err) {
+                console.log(chalk.red("Discord Webhook Error"));
+                process.exit(1);
+            }
         }
         else {
             return;
@@ -178,7 +185,7 @@ async function defense(username, quantity) {
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
         if (userCheck.defense == user.defense + 10) {
-            break;
+            return;
         }
      
     }
@@ -202,8 +209,14 @@ async function engineering(username, quantity) {
             //update user   
             await collection.updateOne({username: username}, {$inc: {engineering: 1}});
             await collection.updateOne({username: username }, {$set: {minerate: newrate}});
-            webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
-        }
+            try{    
+                webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
+            }
+            catch (err) {
+                console.log(chalk.red("Discord Webhook Error"));
+                process.exit(1);
+            }
+        }   
         else {
             return;
         }
@@ -211,7 +224,7 @@ async function engineering(username, quantity) {
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
         if (userCheck.engineering == user.engineering + 1 && userCheck.minerate == newrate) {
-            break;
+            return;
         }
     }
 
@@ -232,7 +245,13 @@ async function damage(username, quantity) {
 
         if (quantity == cost){
             await collection.updateOne({username: username}, {$inc: {damage: 10}});
-            webhook('Damage Upgrade', username + ' has upgraded their damage to ' + (user.damage + 10), '#86fc86');
+            try {
+                await webhook('Upgrade', username + ' upgraded damage to ' + (user.damage + 10), '#86fc86');
+            }
+            catch (err) {
+                console.log(chalk.red("Discord Webhook Error"));
+                process.exit(1);
+            }
         }
         else {
             return;
@@ -241,7 +260,7 @@ async function damage(username, quantity) {
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
         if (userCheck.damage == user.damage + 10) {
-            break;
+            return;
         }
     }
 
@@ -312,8 +331,14 @@ async function contribute(username, quantity) {
         //check if new favor is correct
         var userCheck = await collection.findOne({ username : username });
         if (userCheck.favor == startFavor + qty) {
-            webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
-            break;
+            try{
+                webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
+                return;
+            }
+            catch (err) {
+                console.log(chalk.red("Discord Webhook Error"));
+                process.exit(1);
+            }
         }
         else{
             break;
