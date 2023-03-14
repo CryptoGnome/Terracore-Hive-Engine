@@ -38,7 +38,6 @@ async function findNode() {
     }
 }
 
-
 async function webhook(title, message, color) {
     const embed = new MessageBuilder()
         .setTitle(title)
@@ -54,100 +53,6 @@ async function webhook(title, message, color) {
         process.exit(1);
     }
     
-}
-
-async function engineBalance(username) {
-    //make a list of nodes to try
-    const nodes = ["https://engine.rishipanthee.com", "https://herpc.dtools.dev", "https://api.primersion.com"];
-    var node;
-
-    //try each node until one works, just try for a response
-    for (let i = 0; i < nodes.length; i++) {
-        try {
-            const response = await fetch(nodes[i], {
-                method: "GET",
-                headers:{'Content-type' : 'application/json'},
-            });
-            const data = await response.json()
-            node = nodes[i];
-            break;
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-                
-
-    const response = await fetch(node + "/contracts", {
-      method: "POST",
-      headers:{'Content-type' : 'application/json'},
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "find",
-        params: {
-          contract: "tokens",
-          table: "balances",
-          query: {
-            "account":username,
-            "symbol":SYMBOL    
-          }
-        },
-        "id": 1,
-      })
-    });
-    const data = await response.json()
-    if (data.result.length > 0) {
-        return parseFloat(data.result[0].balance);
-    } else {
-        return 0;
-    }
-}
-
-async function scrapStaked(username) {
-    //make a list of nodes to try
-    const nodes = ["https://engine.rishipanthee.com", "https://herpc.dtools.dev", "https://api.primersion.com"];
-    var node;
-
-    //try each node until one works, just try for a response
-    for (let i = 0; i < nodes.length; i++) {
-        try {
-            const response = await fetch(nodes[i], {
-                method: "GET",
-                headers:{'Content-type' : 'application/json'},
-            });
-            const data = await response.json()
-            node = nodes[i];
-            break;
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
-                
-
-    const response = await fetch(node + "/contracts", {
-      method: "POST",
-      headers:{'Content-type' : 'application/json'},
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "find",
-        params: {
-          contract: "tokens",
-          table: "balances",
-          query: {
-            "account":username,
-            "symbol":SYMBOL    
-          }
-        },
-        "id": 1,
-      })
-    });
-    const data = await response.json()
-    if (data.result.length > 0) {
-        return parseFloat(data.result[0].stake);
-    } else {
-        return 0;
-    }
 }
 
 async function storeHash(hash, username) {
@@ -464,12 +369,6 @@ async function listen() {
 }
 
 
-
-
-
-
-//testwebhook
-//track last event and reset claims every 15 seconds
 listen();
 lastevent = Date.now();
 //kill process if no events have been received in 30 seconds
