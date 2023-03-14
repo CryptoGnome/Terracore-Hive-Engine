@@ -26,7 +26,12 @@ async function findNode() {
     //try each node until one works, just try for a response
     for (let i = 0; i < nodes.length; i++) {
         try {
-            const response = await fetch(nodes[i], {
+
+            //start with a random node first to avoid getting stuck on a bad node
+            if (i == 0) {
+                var random = Math.floor(Math.random() * nodes.length);
+            }
+            const response = await fetch(nodes[random], {
                 method: "GET",
                 headers:{'Content-type' : 'application/json'},
             });
@@ -95,7 +100,6 @@ async function defense(username, quantity) {
 async function engineering(username, quantity) {
     let db = client.db(dbName);
     let collection = db.collection('players');
-
     //create loop to run until update is successful
     let user = await collection.findOne({ username : username });
     if (!user) {
@@ -117,7 +121,6 @@ async function engineering(username, quantity) {
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
         if (userCheck.engineering == (user.engineering + 1) && userCheck.minerate == newrate) {
-            console.log('Engineering upgrade successful for ' + username);
             await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
             return;
         }
@@ -237,16 +240,15 @@ async function listen() {
     const ssc = new SSC(node);
     ssc.stream((err, res) => {
         lastevent = Date.now();
-        if (!res['transactions']) {
+        if (res['transactions']) {
             //loop through transactions and look for events
             try{
                 for (var i = 0; i < res['transactions'].length; i++) {
                     //check if contract is token
                     if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'transfer') {
-                        //console.log(res['transactions'][i]);
                         //convert payload to json
                         var payload = JSON.parse(res['transactions'][i]['payload']);
-
+        
                         //check if to is "terracore"
                         if (payload.to == 'terracore' && payload.symbol == 'SCRAP') {
                             //get memo 
@@ -258,18 +260,17 @@ async function listen() {
                             var quantity = payload.quantity;
                             var tx = res['transactions'][i]
                             var hashStore = payload.memo;
-                            console.log(res['transactions'][i]);
+                            //console.log(res['transactions'][i]);
 
-                        
                             var isComplete = checkTx(res['transactions'][i].transactionId);
                             //wait for promise from isComplete then log
                             isComplete.then(function(result) {
                                 //console.log(result);
                                 if (!result) {
-                                    //no action
                                     return
                                 }     
-                                else{                          
+                                else{           
+                                                
                                     //check if memo is engineering
                                     if (memo.event == 'terracore_engineering'){
                                         engineering(from, quantity);
@@ -340,6 +341,9 @@ async function listen() {
             catch(err){
                 console.log(err);
             }
+        }
+        else {
+            console.log('No transactions');
         }
 
     });
