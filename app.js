@@ -3,6 +3,7 @@ const { MongoClient } = require('mongodb');
 const fetch = require('node-fetch');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 const { api } = require('@hiveio/hive-js');
+const e = require('express');
 require('dotenv').config();
 
 //connect to Webhook
@@ -107,8 +108,7 @@ async function engineering(username, quantity) {
 
         if (quantity == cost){
             //update user   
-            await collection.updateOne({username: username}, {$inc: {engineering: 1}});
-            await collection.updateOne({username: username }, {$set: {minerate: newrate}});
+            await collection.updateOne({username: username}, {$inc: {engineering: 1}, $set: {minerate: newrate}});
         }   
         else {
             return;
@@ -117,8 +117,12 @@ async function engineering(username, quantity) {
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
         if (userCheck.engineering == (user.engineering + 1) && userCheck.minerate == newrate) {
+            console.log('Engineering upgrade successful for ' + username);
             await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
             return;
+        }
+        else {
+            console.log('Engineering upgrade failed for ' + username);
         }
     }
 
