@@ -68,60 +68,32 @@ async function storeHash(hash, username) {
     await collection.insertOne({hash: hash, username: username, time: Date.now()});
     console.log('Hash ' + hash + ' stored');
 }
-//defense upgrade
-async function defense(username, quantity) {
-    let db = client.db(dbName);
-    let collection = db.collection('players');
 
-    //create loop to run until update is successful
-    let user = await collection.findOne({ username : username });
-    if (!user) {
-        return;
-    }
-    while (true) {
-        let cost = Math.pow(user.defense/10, 2);
-        if (quantity == cost){
-            await collection.updateOne({username : username}, {$inc: {defense: 10}});      
-        }
-        else {
-            return;
-        }
-
-        //check if update was successful
-        let userCheck = await collection.findOne({ username : username });
-        if (userCheck.defense == user.defense + 10) {
-            webhook('Upgrade', username + ' upgraded defense to ' + (user.defense + 10), '#86fc86');
-            return;
-        }
-     
-    }
-}
 //engineering upgrade
 async function engineering(username, quantity) {
     let db = client.db(dbName);
     let collection = db.collection('players');
-    //create loop to run until update is successful
     let user = await collection.findOne({ username : username });
+
     if (!user) {
         return;
     }
-    while (true) {
-        let cost = Math.pow(user.engineering, 2);
-        //new minerate is old minerate + 10% of old minerate
-        var newrate = user.minerate + (user.minerate * 0.1);
 
-        if (quantity == cost){
-            //update user   
-            await collection.updateOne({username: username}, {$inc: {engineering: 1}, $set: {minerate: newrate}});
+    var cost = Math.pow(user.engineering, 2);
+    var newrate = user.minerate + (user.minerate * 0.1);
+    var newEngineer = user.engineering + 1;
+
+    while (true) {
+        if (quantity == cost){  
+            await collection.updateOne({username: username}, {$set: {minerate: newrate, engineering: newEngineer}});
         }   
         else {
             return;
         }
 
-        //check if update was successful
         let userCheck = await collection.findOne({ username : username });
-        if (userCheck.engineering == (user.engineering + 1) && userCheck.minerate == newrate) {
-            await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
+        if (userCheck.engineering == newEngineer && userCheck.minerate == newrate) {
+            await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + newEngineer, '#86fc86')
             return;
         }
         else {
@@ -130,30 +102,62 @@ async function engineering(username, quantity) {
     }
 
 }
+//defense upgrade
+async function defense(username, quantity) {
+    let db = client.db(dbName);
+    let collection = db.collection('players');
+    let user = await collection.findOne({ username : username });
+
+    if (!user) {
+        return;
+    }
+
+    while (true) {
+        let cost = Math.pow(user.defense/10, 2);
+        var newDefense = user.defense + 10;
+        if (quantity == cost){
+            await collection.updateOne({username : username}, {$set: {defense: newDefense}}); 
+        }
+        else {
+            return;
+        }
+
+        let userCheck = await collection.findOne({ username : username });
+        if (userCheck.defense == newDefense) {
+            webhook('Upgrade', username + ' upgraded defense to ' + newDefense, '#86fc86');
+            return;
+        }
+        else {
+            console.log('Defense upgrade failed for ' + username);
+        }
+     
+    }
+}
+
 //damage upgrade
 async function damage(username, quantity) {
     let db = client.db(dbName);
     let collection = db.collection('players');
     let user = await collection.findOne({ username : username });
 
-    //check if user exists
     if (!user) {
         return;
     }
+
     while (true) {
-        let cost = Math.pow(user.damage/10, 2);
+        var cost = Math.pow(user.damage/10, 2);
+        var newDamage = user.damage + 10;
 
         if (quantity == cost){
-            await collection.updateOne({username: username}, {$inc: {damage: 10}});
+            await collection.updateOne({username: username}, {$set: {damage: newDamage}});
         }
         else {
             return;
         }
 
-        //check if update was successful
         let userCheck = await collection.findOne({ username : username });
-        if (userCheck.damage == user.damage + 10) {
-            webhook('Upgrade', username + ' upgraded damage to ' + (user.damage + 10), '#86fc86');
+        if (userCheck.damage == newDamage) {
+            webhook('Upgrade', username + ' upgraded damage to ' + newDamage, '#86fc86');
             return;
         }
     }
@@ -175,18 +179,16 @@ async function contribute(username, quantity) {
 
     while (true) {
         var qty = parseFloat(quantity);
-        //add quantity to favor
-        await collection.updateOne({username: username}, {$inc: {favor: qty}});
-        //load stats collection
-        var stats = db.collection('stats');
-        await stats.updateOne({date: "global"}, {$inc: {currentFavor: qty}});
-        
-        //check if update was successful
-        collection = db.collection('players');
-        //check if new favor is correct
+        var newFavor = user.favor + qty;
+        var newGlobalFavor = user.globalFavor + qty;
+
+        await collection.updateOne({username: username}, {$set: {favor: newFavor}});
+
         var userCheck = await collection.findOne({ username : username });
         if (userCheck.favor == startFavor + qty) {
             webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
+            var stats = db.collection('stats');
+            await stats.updateOne({date: "global"}, {$set: {globalFavor: newGlobalFavor}});
             return;
         }
         
