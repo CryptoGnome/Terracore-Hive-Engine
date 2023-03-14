@@ -187,7 +187,9 @@ async function contribute(username, quantity) {
         var userCheck = await collection.findOne({ username : username });
         if (userCheck.favor == startFavor + qty) {
             webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
+            return;
         }
+        
     }
 
 
