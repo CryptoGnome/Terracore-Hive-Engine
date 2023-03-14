@@ -117,7 +117,7 @@ async function engineering(username, quantity) {
         //check if update was successful
         let userCheck = await collection.findOne({ username : username });
         if (userCheck.engineering == (user.engineering + 1) && userCheck.minerate == newrate) {
-            webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
+            await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
             return;
         }
     }
