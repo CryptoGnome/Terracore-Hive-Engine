@@ -355,8 +355,8 @@ lastevent = Date.now();
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 30000) {
-        console.log('No events received in 30 seconds, shutting down so pm2 can restart');
+    if (Date.now() - lastevent > 12000) {
+        console.log('No events received in 12 seconds, shutting down so pm2 can restart');
         process.exit();
     }
 }, 1000);
