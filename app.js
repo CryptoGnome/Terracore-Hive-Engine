@@ -205,7 +205,7 @@ async function engineering(username, quantity) {
             webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + (user.engineering + 1), '#86fc86')
         }
         else {
-            break;
+            return;
         }
 
         //check if update was successful
@@ -235,7 +235,7 @@ async function damage(username, quantity) {
             webhook('Damage Upgrade', username + ' has upgraded their damage to ' + (user.damage + 10), '#86fc86');
         }
         else {
-            break;
+            return;
         }
 
         //check if update was successful
@@ -330,112 +330,110 @@ async function listen() {
     const ssc = new SSC(node);
     ssc.stream((err, res) => {
         lastevent = Date.now();
+        if (!res['transactions']) {
+            //loop through transactions and look for events
+            try{
+                for (var i = 0; i < res['transactions'].length; i++) {
+                    //check if contract is token
+                    if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'transfer') {
+                        //console.log(res['transactions'][i]);
+                        //convert payload to json
+                        var payload = JSON.parse(res['transactions'][i]['payload']);
 
-        //loop through transactions and look for events
-        try{
-            for (var i = 0; i < res['transactions'].length; i++) {
-                //check if contract is token
-                if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'transfer') {
-                    //console.log(res['transactions'][i]);
-                    //convert payload to json
-                    var payload = JSON.parse(res['transactions'][i]['payload']);
+                        //check if to is "terracore"
+                        if (payload.to == 'terracore' && payload.symbol == 'SCRAP') {
+                            //get memo 
+                            var memo = {
+                                event: payload.memo.split('-')[0],
+                                hash: payload.memo.split('-')[1],
+                            }
+                            var from = res['transactions'][i]['sender'];
+                            var quantity = payload.quantity;
+                            var tx = res['transactions'][i]
+                            var hashStore = payload.memo;
+                            console.log(res['transactions'][i]);
 
-                    //check if to is "terracore"
-                    if (payload.to == 'terracore' && payload.symbol == 'SCRAP') {
-                        //get memo 
-                        var memo = {
-                            event: payload.memo.split('-')[0],
-                            hash: payload.memo.split('-')[1],
-                        }
-                        var from = res['transactions'][i]['sender'];
-                        var quantity = payload.quantity;
-                        var tx = res['transactions'][i]
-                        var hashStore = payload.memo;
-                        console.log(res['transactions'][i]);
-
-                    
-                        var isComplete = checkTx(res['transactions'][i].transactionId);
-                        //wait for promise from isComplete then log
-                        isComplete.then(function(result) {
-                            //console.log(result);
-                            if (!result) {
-                                //no action
-                                return
-                            }     
-                            else{                          
-                                //check if memo is engineering
-                                if (memo.event == 'terracore_engineering'){
-                                    engineering(from, quantity);
-                                    storeHash(hashStore, from);
-                                    return;
-                                }
-                                else if (memo.event == 'terracore_health'){
-                                    health(from, quantity);
-                                    storeHash(hashStore, from);
-                                    return;
-                
-                                }
-                                else if (memo.event == 'terracore_damage'){
-                                    damage(from, quantity);
-                                    storeHash(hashStore, from);
-                                    return;
-                                }
-                                else if (memo.event == 'terracore_defense'){
-                                    defense(from, quantity);
-                                    storeHash(hashStore, from);
-                                    return;
-                                }
-                                else if (memo.event == 'terracore_contribute'){
-                                    contribute(from, quantity);
-                                    storeHash(hashStore, from);
-                                    return;
-                                }
-                                else{
-                                    console.log('Unknown event');
-                                    return;
-                                }
-                            }                    
-                        });
                         
+                            var isComplete = checkTx(res['transactions'][i].transactionId);
+                            //wait for promise from isComplete then log
+                            isComplete.then(function(result) {
+                                //console.log(result);
+                                if (!result) {
+                                    //no action
+                                    return
+                                }     
+                                else{                          
+                                    //check if memo is engineering
+                                    if (memo.event == 'terracore_engineering'){
+                                        engineering(from, quantity);
+                                        storeHash(hashStore, from);
+                                        return;
+                                    }
+                                    else if (memo.event == 'terracore_health'){
+                                        health(from, quantity);
+                                        storeHash(hashStore, from);
+                                        return;
+                    
+                                    }
+                                    else if (memo.event == 'terracore_damage'){
+                                        damage(from, quantity);
+                                        storeHash(hashStore, from);
+                                        return;
+                                    }
+                                    else if (memo.event == 'terracore_defense'){
+                                        defense(from, quantity);
+                                        storeHash(hashStore, from);
+                                        return;
+                                    }
+                                    else if (memo.event == 'terracore_contribute'){
+                                        contribute(from, quantity);
+                                        storeHash(hashStore, from);
+                                        return;
+                                    }
+                                    else{
+                                        console.log('Unknown event');
+                                        return;
+                                    }
+                                }                    
+                            });
+                            
+                        }
+
                     }
+                    else if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'stake') {
+                        //convert payload to json
+                        var payload = JSON.parse(res['transactions'][i]['payload']);
 
-                }
-                else if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'stake') {
-                    //convert payload to json
-                    var payload = JSON.parse(res['transactions'][i]['payload']);
+                        //check if symbol is scrap
+                        if (payload.symbol == 'SCRAP') {
+                            var sender = res['transactions'][i]['sender'];
+                            var qty = payload.quantity;
+                            var isComplete = checkTx(res['transactions'][i].transactionId);
+                            var hashStore = payload.memo;
+                            isComplete.then(function(result) {
+                                console.log(result);
+                                if (!result) {
+                                    //no action
+                                    return
+                                }     
+                                else{
+                                    webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
+                                    storeHash(hashStore, sender);
+                                    return;
+                                }                    
+                            });
 
-                    //check if symbol is scrap
-                    if (payload.symbol == 'SCRAP') {
-                        var sender = res['transactions'][i]['sender'];
-                        var qty = payload.quantity;
-                        var isComplete = checkTx(res['transactions'][i].transactionId);
-                        var hashStore = payload.memo;
-                        isComplete.then(function(result) {
-                            console.log(result);
-                            if (!result) {
-                                //no action
-                                return
-                            }     
-                            else{
-                                webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
-                                storeHash(hashStore, sender);
-                                return;
-                            }                    
-                        });
+                        
+                        }
 
-                      
+
                     }
-
-
                 }
             }
+            catch(err){
+                console.log(err);
+            }
         }
-        catch(err){
-            console.log(err);
-        }
-
-
-
 
     });
 }
