@@ -2,8 +2,7 @@ const SSC = require('sscjs');
 const { MongoClient, MongoTopologyClosedError } = require('mongodb');
 const fetch = require('node-fetch');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
-const { api } = require('@hiveio/hive-js');
-const e = require('express');
+const { api } = require('@hiveio/hive-js');;
 require('dotenv').config();
 
 //connect to Webhook
@@ -212,15 +211,16 @@ async function contribute(username, quantity) {
         while (true) {
             var qty = parseFloat(quantity);
             var newFavor = user.favor + qty;
-            var newGlobalFavor = user.globalFavor + qty;
-
+            
             await collection.updateOne({username: username}, {$set: {favor: newFavor}});
 
             var userCheck = await collection.findOne({ username : username });
             if (userCheck.favor == startFavor + qty) {
                 webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
                 var stats = db.collection('stats');
-                await stats.updateOne({date: "global"}, {$set: {globalFavor: newGlobalFavor}});
+                var globalFavor = await stats.findOne({date: "global"});
+                var newGlobalFavor = globalFavor.currentFavor + qty;
+                await stats.updateOne({date: "global"}, {$set: {currentFavor: newGlobalFavor}});
                 return;
             }
             
