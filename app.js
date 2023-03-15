@@ -1,5 +1,5 @@
 const SSC = require('sscjs');
-const { MongoClient } = require('mongodb');
+const { MongoClient, MongoTopologyClosedError } = require('mongodb');
 const fetch = require('node-fetch');
 const { Webhook, MessageBuilder } = require('discord-webhook-node');
 const { api } = require('@hiveio/hive-js');
@@ -10,12 +10,10 @@ require('dotenv').config();
 const hook = new Webhook(process.env.DISCORD_WEBHOOK);
 
 
-const url = process.env.MONGO_URL;
-const dbName = 'terracore';
-const SYMBOL = 'SCRAP';
-const wif = process.env.ACTIVE_KEY;
 
+const dbName = 'terracore';
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 7000 });
+
 
 //find node to use
 const nodes = ["https://herpc.dtools.dev", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
@@ -71,94 +69,127 @@ async function storeHash(hash, username) {
 
 //engineering upgrade
 async function engineering(username, quantity) {
-    let db = client.db(dbName);
-    let collection = db.collection('players');
-    let user = await collection.findOne({ username : username });
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('players');
+        let user = await collection.findOne({ username : username });
 
-    if (!user) {
-        return;
+        if (!user) {
+            return;
+        }
+
+        var cost = Math.pow(user.engineering, 2);
+        var newrate = user.minerate + (user.minerate * 0.1);
+        var newEngineer = user.engineering + 1;
+
+        while (true) {
+            if (quantity == cost){  
+                await collection.updateOne({username: username}, {$set: {minerate: newrate, engineering: newEngineer}});
+            }   
+            else {
+                return;
+            }
+
+            let userCheck = await collection.findOne({ username : username });
+            if (userCheck.engineering == newEngineer && userCheck.minerate == newrate) {
+                await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + newEngineer, '#86fc86')
+                return;
+            }
+            else {
+                console.log('Engineering upgrade failed for ' + username);
+            }
+        }
     }
-
-    var cost = Math.pow(user.engineering, 2);
-    var newrate = user.minerate + (user.minerate * 0.1);
-    var newEngineer = user.engineering + 1;
-
-    while (true) {
-        if (quantity == cost){  
-            await collection.updateOne({username: username}, {$set: {minerate: newrate, engineering: newEngineer}});
-        }   
-        else {
-            return;
-        }
-
-        let userCheck = await collection.findOne({ username : username });
-        if (userCheck.engineering == newEngineer && userCheck.minerate == newrate) {
-            await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + newEngineer, '#86fc86')
-            return;
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
         }
         else {
-            console.log('Engineering upgrade failed for ' + username);
+            console.log(err);
         }
     }
 
 }
 //defense upgrade
 async function defense(username, quantity) {
-    let db = client.db(dbName);
-    let collection = db.collection('players');
-    let user = await collection.findOne({ username : username });
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('players');
+        let user = await collection.findOne({ username : username });
 
-    if (!user) {
-        return;
+        if (!user) {
+            return;
+        }
+
+        while (true) {
+            let cost = Math.pow(user.defense/10, 2);
+            var newDefense = user.defense + 10;
+            if (quantity == cost){
+                await collection.updateOne({username : username}, {$set: {defense: newDefense}}); 
+            }
+            else {
+                return;
+            }
+
+            let userCheck = await collection.findOne({ username : username });
+            if (userCheck.defense == newDefense) {
+                webhook('Upgrade', username + ' upgraded defense to ' + newDefense, '#86fc86');
+                return;
+            }
+            else {
+                console.log('Defense upgrade failed for ' + username);
+            }
+        
+        }
     }
-
-    while (true) {
-        let cost = Math.pow(user.defense/10, 2);
-        var newDefense = user.defense + 10;
-        if (quantity == cost){
-            await collection.updateOne({username : username}, {$set: {defense: newDefense}}); 
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
         }
         else {
-            return;
+            console.log(err);
         }
-
-        let userCheck = await collection.findOne({ username : username });
-        if (userCheck.defense == newDefense) {
-            webhook('Upgrade', username + ' upgraded defense to ' + newDefense, '#86fc86');
-            return;
-        }
-        else {
-            console.log('Defense upgrade failed for ' + username);
-        }
-     
     }
 }
 
 //damage upgrade
 async function damage(username, quantity) {
-    let db = client.db(dbName);
-    let collection = db.collection('players');
-    let user = await collection.findOne({ username : username });
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('players');
+        let user = await collection.findOne({ username : username });
 
-    if (!user) {
-        return;
+        if (!user) {
+            return;
+        }
+
+        while (true) {
+            var cost = Math.pow(user.damage/10, 2);
+            var newDamage = user.damage + 10;
+
+            if (quantity == cost){
+                await collection.updateOne({username: username}, {$set: {damage: newDamage}});
+            }
+            else {
+                return;
+            }
+
+            let userCheck = await collection.findOne({ username : username });
+            if (userCheck.damage == newDamage) {
+                webhook('Upgrade', username + ' upgraded damage to ' + newDamage, '#86fc86');
+                return;
+            }
+        }
     }
-
-    while (true) {
-        var cost = Math.pow(user.damage/10, 2);
-        var newDamage = user.damage + 10;
-
-        if (quantity == cost){
-            await collection.updateOne({username: username}, {$set: {damage: newDamage}});
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
         }
         else {
-            return;
-        }
-
-        let userCheck = await collection.findOne({ username : username });
-        if (userCheck.damage == newDamage) {
-            webhook('Upgrade', username + ' upgraded damage to ' + newDamage, '#86fc86');
-            return;
+            console.log(err);
         }
     }
 
@@ -166,34 +197,44 @@ async function damage(username, quantity) {
 
 //contributor upgrade
 async function contribute(username, quantity) {
-    let db = client.db(dbName);
-    let collection = db.collection('players');
-    let user = await collection.findOne({username: username});
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('players');
+        let user = await collection.findOne({username: username});
 
-    //check if user exists
-    if (!user) {
-        return;
-    }
-    //check starting favor
-    let startFavor = user.favor;
-
-    while (true) {
-        var qty = parseFloat(quantity);
-        var newFavor = user.favor + qty;
-        var newGlobalFavor = user.globalFavor + qty;
-
-        await collection.updateOne({username: username}, {$set: {favor: newFavor}});
-
-        var userCheck = await collection.findOne({ username : username });
-        if (userCheck.favor == startFavor + qty) {
-            webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
-            var stats = db.collection('stats');
-            await stats.updateOne({date: "global"}, {$set: {globalFavor: newGlobalFavor}});
+        //check if user exists
+        if (!user) {
             return;
         }
-        
-    }
+        //check starting favor
+        let startFavor = user.favor;
 
+        while (true) {
+            var qty = parseFloat(quantity);
+            var newFavor = user.favor + qty;
+            var newGlobalFavor = user.globalFavor + qty;
+
+            await collection.updateOne({username: username}, {$set: {favor: newFavor}});
+
+            var userCheck = await collection.findOne({ username : username });
+            if (userCheck.favor == startFavor + qty) {
+                webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
+                var stats = db.collection('stats');
+                await stats.updateOne({date: "global"}, {$set: {globalFavor: newGlobalFavor}});
+                return;
+            }
+            
+        }
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+        }
+    }
 
 }
 
