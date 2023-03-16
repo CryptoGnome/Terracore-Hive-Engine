@@ -15,7 +15,7 @@ var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, use
 
 
 //find node to use
-const nodes = ["https://herpc.dtools.dev", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
+const nodes = ["https://herpc.dtools.dev", "https://ctpmain.com", "https://he.atexoras.com:2083", "https://herpc.liotes.com", "https://herpc.tribaldex.com/", "https://primersion.com/engine.hive.pizza", "https://api.primersion.com", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
 var node;
 
 
@@ -23,21 +23,17 @@ async function findNode() {
     //try each node until one works, just try for a response
     for (let i = 0; i < nodes.length; i++) {
         try {
-
-            //start with a random node first to avoid getting stuck on a bad node
-            if (i == 0) {
-                var random = Math.floor(Math.random() * nodes.length);
-            }
-            const response = await fetch(nodes[random], {
-                method: "GET",
-                headers:{'Content-type' : 'application/json'},
-            });
-            const data = await response.json()
-            node = nodes[i];
+            //do a basic get request to see if the node is working and log the result
+            const url = nodes[i];
+            const response = await fetch(url);
+            const data = await response.json();
+            node = url;
             break;
-        } catch (error) {
-            console.log("node " + nodes[i] + " not working");
         }
+        catch (err) {
+            console.log("NodeError: " + err);
+        }
+
     }
 }
 
@@ -277,11 +273,82 @@ async function checkTx(txId) {
     return false;
 }
 
+//create a function where you can send transactions to be queued to be sent
+async function sendTransaction(username, quantity, type, hash){
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('he-transactions');
+        let result = await collection.insertOne({username: username, quantity: quantity, type: type, hash: hash, time: new Date()});
+        console.log('Transaction ' + result.insertedId + ' added to queue');
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+        }
+    } 
+}
+
+//create a function that can be called to send all transactions in the queue
+async function sendTransactions() {
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('he-transactions');
+        let transactions = await collection.find({}).toArray();
+        for (let i = 0; i < transactions.length; i++) {
+            let transaction = transactions[i];
+            if(transaction.type == 'engineering') {
+                await engineering(transaction.username, transaction.quantity);
+                storeHash(transaction.hash, transaction.username);
+            }
+            else if (transaction.type == 'contribute') {
+                await contribute(transaction.username, transaction.quantity);
+                storeHash(transaction.hash, transaction.username);
+            }
+            else if (transaction.type == 'defense') {
+                await defense(transaction.username, transaction.quantity);
+                storeHash(transaction.hash, transaction.username);
+            }
+            else if (transaction.type == 'damage') {
+                await damage(transaction.username, transaction.quantity);
+                storeHash(transaction.hash, transaction.username);
+            }
+            else{
+                console.log('unknown transaction type');
+            } 
+        }
+        await collection.deleteMany({});
+        return true;
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+            return true;
+        }
+    }
+}
+
+//call send transactions and wait for it to return true then call check transactions
+async function checkTransactions() {
+    console.log('Checking transactions');
+    let done = await sendTransactions();
+    if(done) {
+        setTimeout(checkTransactions, 1000);
+    }
+}
 
 var lastevent = Date.now();
 //aysncfunction to start listening for events
 async function listen() {
     await findNode();
+    checkTransactions();
     const ssc = new SSC(node);
     ssc.stream((err, res) => {
         lastevent = Date.now();
@@ -318,29 +385,19 @@ async function listen() {
                                                 
                                     //check if memo is engineering
                                     if (memo.event == 'terracore_engineering'){
-                                        engineering(from, quantity);
-                                        storeHash(hashStore, from);
+                                        sendTransaction(from, quantity, 'engineering', hashStore);
                                         return;
-                                    }
-                                    else if (memo.event == 'terracore_health'){
-                                        health(from, quantity);
-                                        storeHash(hashStore, from);
-                                        return;
-                    
                                     }
                                     else if (memo.event == 'terracore_damage'){
-                                        damage(from, quantity);
-                                        storeHash(hashStore, from);
+                                        sendTransaction(from, quantity, 'damage', hashStore);
                                         return;
                                     }
                                     else if (memo.event == 'terracore_defense'){
-                                        defense(from, quantity);
-                                        storeHash(hashStore, from);
+                                        sendTransaction(from, quantity, 'defense', hashStore);
                                         return;
                                     }
                                     else if (memo.event == 'terracore_contribute'){
-                                        contribute(from, quantity);
-                                        storeHash(hashStore, from);
+                                        sendTransaction(from, quantity, 'contribute', hashStore);
                                         return;
                                     }
                                     else{
