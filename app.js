@@ -36,7 +36,6 @@ async function findNode() {
 
     }
 }
-
 async function webhook(title, message, color) {
     const embed = new MessageBuilder()
         .setTitle(title)
@@ -54,14 +53,12 @@ async function webhook(title, message, color) {
     }
     
 }
-
 async function storeHash(hash, username) {
     let db = client.db(dbName);
     let collection = db.collection('hashes');
     await collection.insertOne({hash: hash, username: username, time: Date.now()});
     console.log('Hash ' + hash + ' stored');
 }
-
 //engineering upgrade
 async function engineering(username, quantity) {
     try{
@@ -148,7 +145,6 @@ async function defense(username, quantity) {
         }
     }
 }
-
 //damage upgrade
 async function damage(username, quantity) {
     try{
@@ -189,7 +185,6 @@ async function damage(username, quantity) {
     }
 
 }
-
 //contributor upgrade
 async function contribute(username, quantity) {
     try{
@@ -233,7 +228,6 @@ async function contribute(username, quantity) {
     }
 
 }
-
 //function to check if tx is complete
 async function checkTx(txId) {
     //try to see if tx is complete catch orders and try at least 3 times
@@ -272,7 +266,6 @@ async function checkTx(txId) {
 
     return false;
 }
-
 //create a function where you can send transactions to be queued to be sent
 async function sendTransaction(username, quantity, type, hash){
     try{
@@ -291,7 +284,6 @@ async function sendTransaction(username, quantity, type, hash){
         }
     } 
 }
-
 //create a function that can be called to send all transactions in the queue
 async function sendTransactions() {
     try{
@@ -334,10 +326,9 @@ async function sendTransactions() {
         }
     }
 }
-
 //call send transactions and wait for it to return true then call check transactions
 async function checkTransactions() {
-    console.log('Checking transactions');
+    //console.log('Checking transactions');
     let done = await sendTransactions();
     if(done) {
         setTimeout(checkTransactions, 1000);
@@ -381,8 +372,7 @@ async function listen() {
                                 if (!result) {
                                     return
                                 }     
-                                else{           
-                                                
+                                else{                      
                                     //check if memo is engineering
                                     if (memo.event == 'terracore_engineering'){
                                         sendTransaction(from, quantity, 'engineering', hashStore);
