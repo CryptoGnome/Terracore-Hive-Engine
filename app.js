@@ -249,18 +249,24 @@ async function checkTx(txId) {
         const data = await response.json()
         console.log(data);
         //parse json from logs: '{"errors":["overdrawn balance"]}'
-        var logs = JSON.parse(data.result.logs);
-        //check if errors exist
-        if (logs.errors) {
-            console.log('error found');
-            return false;
+        try{
+            var logs = JSON.parse(data.result.logs);
+            //check if errors exist
+            if (logs.errors) {
+                console.log('error found');
+                return false;
+            }
+            else if  (data.result) {
+                return true;
+            } 
+            else {
+                //return false;
+                //do nothing
+            }
         }
-        else if  (data.result) {
-            return true;
-        } 
-        else {
-            //return false;
-            //do nothing
+        catch (err) {
+            console.log(err);
+            process.exit(1);
         }
     }
 
