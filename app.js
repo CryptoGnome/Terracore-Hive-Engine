@@ -15,24 +15,45 @@ var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, use
 
 
 //find node to use
-const nodes = ["https://herpc.dtools.dev", "https://ctpmain.com", "https://he.atexoras.com:2083", "https://herpc.liotes.com", "https://herpc.tribaldex.com/", "https://primersion.com/engine.hive.pizza", "https://api.primersion.com", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
+const nodes = ["https://api.hive-engine.com", "https://api2.hive-engine.com"];
 var node;
+
 
 
 async function findNode() {
     node = nodes[Math.floor(Math.random() * nodes.length)];
-    console.log('Using node: ' + node);
     while (true) {
-        const response = await fetch(node);
-        const data = await response.json();
-        if (data.lastBlockNumber) {
-            console.log('Node is online');
-            break;
+        try{
+            const url = node + "/rpc/blockchain";
+            console.log('Using node: ' + url);
+            const response = await fetch(url, {
+                method: "POST",
+                headers:{'Content-type' : 'application/json'},
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "getTransactionInfo",
+                    params: {
+                        txid: '2408d566c63ffbd022d32802d4654b607a6b9566'
+                    },
+                    "id": 15,
+                })
+            });
+            const data = await response.json()
+            if (data) {
+                console.log('Node is online');
+                break;
+            }
+            else {
+                console.log('Node is offline');
+                node = nodes[Math.floor(Math.random() * nodes.length)];
+                console.log('Checking another node: ' + node);
+            }
         }
-        else {
+        catch (err) {
             console.log('Node is offline');
             node = nodes[Math.floor(Math.random() * nodes.length)];
             console.log('Checking another node: ' + node);
+            lastevent = Date.now();
         }
     }
   
@@ -274,7 +295,7 @@ async function contribute(username, quantity) {
 //function to check if tx is complete
 async function checkTx(txId) {
     //try to see if tx is complete catch orders and try at least 3 times
-    var apis = ["https://api.hive-engine.com/rpc/blockchain", "https://api2.hive-engine.com/rpc/blockchain", "https://engine.rishipanthee.com/rpc/blockchain", "https://herpc.dtools.dev/rpc/blockchain", "https://api.primersion.com/rpc/blockchain", "https://herpc.actifit.io/rpc/blockchain"];
+    var apis = ["https://api.hive-engine.com/rpc/blockchain", "https://api2.hive-engine.com/rpc/blockchain"];
 
     for (let i = 0; i < apis.length; i++) {
         const response = await fetch(apis[i], {
