@@ -230,18 +230,6 @@ async function contribute(username, quantity) {
             return;
         }
 
-        //check if last contribution for this user exists
-        if (!user.lastContribution) {
-            user.lastContribution = Date.now() - 60000;
-        }
-
-        //check if the last contribution was less than 30 seconds ago else store hash
-        if (Date.now() - user.lastContribution < 30000) {
-            console.log('User ' + username + ' tried to contribute too fast, rejecting');
-            webhook('Contribution Rejected', 'User ' + username + ' tried to contribute too fast, rejecting', '#fc44d5');
-            await storeRejectedHash(hash, username);
-            return;
-        }
 
         //check starting favor
         let startFavor = user.favor;
