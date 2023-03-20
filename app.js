@@ -8,39 +8,22 @@ require('dotenv').config();
 //connect to Webhook
 const hook = new Webhook(process.env.DISCORD_WEBHOOK);
 
-
-
 const dbName = 'terracore';
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 7000 });
 
 
 //find node to use
-const nodes = ["https://api.hive-engine.com", "https://api2.hive-engine.com"];
+const nodes = ["https://engine.rishipanthee.com", "https://herpc.dtools.dev", "https://api.primersion.com", "https://herpc.kanibot.com", "https://ctpmain.com", "https://he.sourov.dev", "https://he.atexoras.com:2083", "https://herpc.actifit.io", "https://ha.herpc.dtools.dev"];
 var node;
 
-
-
 async function findNode() {
-    node = nodes[Math.floor(Math.random() * nodes.length)];
+    node = nodes[0];
     while (true) {
         try{
-            const url = node + "/rpc/blockchain";
-            console.log('Using node: ' + url);
-            const response = await fetch(url, {
-                method: "POST",
-                headers:{'Content-type' : 'application/json'},
-                body: JSON.stringify({
-                    jsonrpc: "2.0",
-                    method: "getTransactionInfo",
-                    params: {
-                        txid: '2408d566c63ffbd022d32802d4654b607a6b9566'
-                    },
-                    "id": 15,
-                })
-            });
-            const data = await response.json()
+            const response = await fetch(node);
+            const data = await response.json();
             if (data) {
-                console.log('Node is online');
+                console.log('Node is online: ' + node);
                 break;
             }
             else {
@@ -73,8 +56,7 @@ async function webhook(title, message, color) {
         console.log(chalk.red("Discord Webhook Error"));
         //close to prevent infinite loop
         process.exit(1);
-    }
-    
+    }   
 }
 async function storeHash(hash, username) {
     try{
@@ -292,50 +274,6 @@ async function contribute(username, quantity) {
     }
 
 }
-//function to check if tx is complete
-async function checkTx(txId) {
-    //try to see if tx is complete catch orders and try at least 3 times
-    var apis = ["https://api.hive-engine.com/rpc/blockchain", "https://api2.hive-engine.com/rpc/blockchain"];
-
-    for (let i = 0; i < apis.length; i++) {
-        const response = await fetch(apis[i], {
-            method: "POST",
-            headers:{'Content-type' : 'application/json'},
-            body: JSON.stringify({
-                jsonrpc: "2.0",
-                method: "getTransactionInfo",
-                params: {
-                    txid: txId
-                },
-                "id": 1,
-            })
-        });
-        const data = await response.json()
-        console.log(data);
-        //parse json from logs: '{"errors":["overdrawn balance"]}'
-        try{
-            var logs = JSON.parse(data.result.logs);
-            //check if errors exist
-            if (logs.errors) {
-                console.log('error found');
-                return false;
-            }
-            else if  (data.result) {
-                return true;
-            } 
-            else {
-                //return false;
-                //do nothing
-            }
-        }
-        catch (err) {
-            console.log(err);
-            process.exit(1);
-        }
-    }
-
-    return false;
-}
 //create a function where you can send transactions to be queued to be sent
 async function sendTransaction(username, quantity, type, hash){
     try{
@@ -421,9 +359,8 @@ async function listen() {
                     if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'transfer') {
                         //convert payload to json
                         var payload = JSON.parse(res['transactions'][i]['payload']);
-        
-                        //check if to is "terracore"
-                        if (payload.to == 'terracore' && payload.symbol == 'SCRAP') {
+                        //check if to is "null" which is burn address
+                        if (payload.to == 'null' && payload.symbol == 'SCRAP') {
                             //get memo 
                             var memo = {
                                 event: payload.memo.split('-')[0],
@@ -431,42 +368,35 @@ async function listen() {
                             }
                             var from = res['transactions'][i]['sender'];
                             var quantity = payload.quantity;
-                            var tx = res['transactions'][i]
                             var hashStore = payload.memo;
-                            //console.log(res['transactions'][i]);
 
-                            var isComplete = checkTx(res['transactions'][i].transactionId);
-                            //wait for promise from isComplete then log
-                            isComplete.then(function(result) {
-                                //console.log(result);
-                                if (!result) {
-                                    return
-                                }     
-                                else{                      
-                                    //check if memo is engineering
-                                    if (memo.event == 'terracore_engineering'){
-                                        sendTransaction(from, quantity, 'engineering', hashStore);
-                                        return;
-                                    }
-                                    else if (memo.event == 'terracore_damage'){
-                                        sendTransaction(from, quantity, 'damage', hashStore);
-                                        return;
-                                    }
-                                    else if (memo.event == 'terracore_defense'){
-                                        sendTransaction(from, quantity, 'defense', hashStore);
-                                        return;
-                                    }
-                                    else if (memo.event == 'terracore_contribute'){
-                                        sendTransaction(from, quantity, 'contribute', hashStore);
-                                        return;
-                                    }
-                                    else{
-                                        console.log('Unknown event');
-                                        return;
-                                    }
-                                }                    
-                            });
-                            
+                            if (res['transactions'][i].logs.includes('errors')) {
+                                storeRejectedHash(hashStore, from);
+                                return;
+                            }
+
+                            //check if memo is engineering
+                            if (memo.event == 'terracore_engineering'){
+                                sendTransaction(from, quantity, 'engineering', hashStore);
+                                return;
+                            }
+                            else if (memo.event == 'terracore_damage'){
+                                sendTransaction(from, quantity, 'damage', hashStore);
+                                return;
+                            }
+                            else if (memo.event == 'terracore_defense'){
+                                sendTransaction(from, quantity, 'defense', hashStore);
+                                return;
+                            }
+                            else if (memo.event == 'terracore_contribute'){
+                                sendTransaction(from, quantity, 'contribute', hashStore);
+                                return;
+                            }
+                            else{
+                                console.log('Unknown event');
+                                return;
+                            }
+                                       
                         }
 
                     }
@@ -478,22 +408,14 @@ async function listen() {
                         if (payload.symbol == 'SCRAP') {
                             var sender = res['transactions'][i]['sender'];
                             var qty = payload.quantity;
-                            var isComplete = checkTx(res['transactions'][i].transactionId);
                             var hashStore = payload.memo;
-                            isComplete.then(function(result) {
-                                console.log(result);
-                                if (!result) {
-                                    //no action
-                                    return
-                                }     
-                                else{
-                                    webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
-                                    storeHash(hashStore, sender);
-                                    return;
-                                }                    
-                            });
-
-                        
+                            if (res['transactions'][i].logs.includes('errors')) {
+                                storeRejectedHash(hashStore, sender);
+                                return;
+                            }
+                            webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
+                            storeHash(hashStore, sender);
+                            return;
                         }
 
 
@@ -517,13 +439,11 @@ lastevent = Date.now();
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 12000) {
-        console.log('No events received in 12 seconds, shutting down so pm2 can restart');
+    if (Date.now() - lastevent > 20000) {
+        console.log('No events received in 20 seconds, shutting down so pm2 can restart');
         process.exit();
     }
 }, 1000);
-
-
 
 
 
