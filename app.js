@@ -20,22 +20,24 @@ var node;
 
 
 async function findNode() {
-    //try each node until one works, just try for a response
-    for (let i = 0; i < nodes.length; i++) {
-        try {
-            //do a basic get request to see if the node is working and log the result
-            const url = nodes[i];
-            const response = await fetch(url);
-            const data = await response.json();
-            node = url;
+    node = nodes[Math.floor(Math.random() * nodes.length)];
+    console.log('Using node: ' + node);
+    while (true) {
+        const response = await fetch(node);
+        const data = await response.json();
+        if (data.lastBlockNumber) {
+            console.log('Node is online');
             break;
         }
-        catch (err) {
-            console.log("NodeError: " + err);
+        else {
+            console.log('Node is offline');
+            node = nodes[Math.floor(Math.random() * nodes.length)];
+            console.log('Checking another node: ' + node);
         }
-
     }
+  
 }
+
 async function webhook(title, message, color) {
     const embed = new MessageBuilder()
         .setTitle(title)
@@ -54,10 +56,38 @@ async function webhook(title, message, color) {
     
 }
 async function storeHash(hash, username) {
-    let db = client.db(dbName);
-    let collection = db.collection('hashes');
-    await collection.insertOne({hash: hash, username: username, time: Date.now()});
-    console.log('Hash ' + hash + ' stored');
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('hashes');
+        await collection.insertOne({hash: hash, username: username, time: Date.now()});
+        console.log('Hash ' + hash + ' stored');
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+        }
+    }
+}
+async function storeRejectedHash(hash, username) {
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('rejectedHashes');
+        await collection.insertOne({hash: hash, username: username, time: Date.now()});
+        console.log('Hash ' + hash + ' stored');
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+        }
+    }
 }
 //engineering upgrade
 async function engineering(username, quantity) {
@@ -196,13 +226,26 @@ async function contribute(username, quantity) {
         if (!user) {
             return;
         }
+
+        //check if last contribution for this user exists
+        if (!user.lastContribution) {
+            user.lastContribution = Date.now() - 60000;
+        }
+
+        //check if the last contribution was less than 30 seconds ago else store hash
+        if (Date.now() - user.lastContribution < 30000) {
+            console.log('User ' + username + ' tried to contribute too fast, rejecting');
+            webhook('Contribution Rejected', 'User ' + username + ' tried to contribute too fast, rejecting', '#fc44d5');
+            await storeRejectedHash(hash, username);
+            return;
+        }
+
         //check starting favor
         let startFavor = user.favor;
-
         while (true) {
             var qty = parseFloat(quantity);
             var newFavor = user.favor + qty;
-            
+
             await collection.updateOne({username: username}, {$set: {favor: newFavor}});
 
             var userCheck = await collection.findOne({ username : username });
