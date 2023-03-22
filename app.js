@@ -54,8 +54,6 @@ async function webhook(title, message, color) {
     }
     catch (err) {
         console.log(chalk.red("Discord Webhook Error"));
-        //close to prevent infinite loop
-        process.exit(1);
     }   
 }
 async function storeHash(hash, username) {
@@ -307,8 +305,9 @@ async function sendTransactions() {
             else{
                 console.log('unknown transaction type');
             } 
+            //remove transaction from queue
+            await collection.deleteOne({_id: transaction._id});
         }
-        await collection.deleteMany({});
         return true;
     }
     catch (err) {
