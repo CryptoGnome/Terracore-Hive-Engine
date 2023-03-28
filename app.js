@@ -17,7 +17,37 @@ const nodes = ["https://engine.rishipanthee.com", "https://herpc.dtools.dev", "h
 var node;
 
 async function findNode() {
-    node = nodes[0];
+    //look in mongo for last node used
+    var currentNode;
+    try {
+        let db = client.db(dbName);
+        let collection = db.collection('he-node');
+        let lastNode = await collection.findOne({ "global" : { $exists: true } });
+        if (lastNode) {
+            currentNode = lastNode.lastnode + 1;
+            if (currentNode > nodes.length - 1) {
+                currentNode = 0;
+            }
+            //update node in mongo
+            await collection.updateOne({global: true}, {$set: {lastnode: currentNode}});
+        }
+        else {
+            currentNode = 0;
+            //store node in mongo
+            await collection.insertOne({global: true, lastnode: currentNode});
+        }
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+        }
+    }
+    console.log('Current node: ' + currentNode);
+    node = nodes[currentNode];
     while (true) {
         try{
             const response = await fetch(node);
@@ -228,7 +258,6 @@ async function contribute(username, quantity) {
             return;
         }
 
-
         //check starting favor
         let startFavor = user.favor;
         while (true) {
@@ -426,9 +455,9 @@ lastevent = Date.now();
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 20000) {
-        console.log('No events received in 20 seconds, shutting down so pm2 can restart');
-        process.exit();
+    if (Date.now() - lastevent > 60000) {
+        console.log('No events received in 60 seconds, shutting down so pm2 can restart');
+        process.exit(1);
     }
 }, 1000);
 
