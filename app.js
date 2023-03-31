@@ -289,6 +289,69 @@ async function contribute(username, quantity) {
     }
 
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+////NFT FUNCTIONS/////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//THESE ARE TEST FUNCTIONS FOR THE NFT MARKETPLACE IF YOU SEND SCRAP BEFORE LAUNCH YOU WILL LOOSE THE NFTS THAT POPULATE
+async function buy_crate(owner, quantity){
+    try{
+        //load crate collection
+        let db = client.db(dbName); 
+        var collection = db.collection('crates');
+
+
+        //check quantity sent if 25 SCRAP == common chest 50 SCRAP == uncommon chest
+        if (quantity == 0.1){
+            var rarity = 'common';
+        }
+        else if (quantity == 0.2){
+            var rarity = 'uncommon';
+        }
+        else {
+            return;
+        }
+
+        //create crate object
+        let crate = new Object();
+        crate.name = rarity.charAt(0).toUpperCase() + rarity.slice(1) + ' Loot Crate';
+        crate.rarity = rarity;
+        crate.owner = owner;
+        crate.item_number = await collection.countDocuments() + 1;
+        crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
+        //add market object to crate
+        let market = new Object();
+        market.listed = false;
+        market.price = 0;
+        market.seller = null;
+        market.created = 0;
+        market.expires = 0;
+        market.sold = 0;
+
+        //add market object to crate
+        crate.market = market;
+
+        //add crate to database
+        collection.insertOne(crate);
+        console.log('Create Purchaed: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
+        //send webhook to discord
+        webhook('New Crate Purchase', 'New crate purchased by ' + owner + ' with rarity: ' + crate.rarity, ' for ' + quantity + ' SCRAP', '#86fc86');
+    }
+    catch(err){
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection is closed');
+            process.exit(1);
+        }
+        else{
+            console.log(err);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+////QUE AND SEND TRANSACTIONS/////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 //create a function where you can send transactions to be queued to be sent
 async function sendTransaction(username, quantity, type, hash){
     try{
@@ -331,6 +394,10 @@ async function sendTransactions() {
                 await damage(transaction.username, transaction.quantity);
                 storeHash(transaction.hash, transaction.username);
             }
+            else if (transaction.type == 'buy_crate') {
+                await buy_crate(transaction.username, transaction.quantity);
+                storeHash(transaction.hash, transaction.username);
+            }
             else{
                 console.log('unknown transaction type');
             } 
@@ -358,6 +425,7 @@ async function checkTransactions() {
         setTimeout(checkTransactions, 1000);
     }
 }
+
 
 var lastevent = Date.now();
 //aysncfunction to start listening for events
@@ -408,6 +476,11 @@ async function listen() {
                                 sendTransaction(from, quantity, 'contribute', hashStore);
                                 return;
                             }
+                            else if (memo.event == 'tm_buy_crate'){
+                                sendTransaction(from, quantity, 'buy_crate', hashStore);
+                                return;
+                            }
+
                             else{
                                 console.log('Unknown event');
                                 return;
