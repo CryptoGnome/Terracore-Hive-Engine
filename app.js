@@ -132,31 +132,25 @@ async function engineering(username, quantity) {
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
-
         if (!user) {
             return true;
         }
-
         var cost = Math.pow(user.engineering, 2);
-        var newrate = user.minerate + (user.minerate * 0.1);
         var newEngineer = user.engineering + 1;
 
         while (true) {
             if (quantity == cost){  
-                await collection.updateOne({username: username}, {$set: {minerate: newrate, engineering: newEngineer}});
+                await collection.updateOne({username: username}, {$set: {engineering: newEngineer}});
             }   
             else {
                 return true;
             }
-
             let userCheck = await collection.findOne({ username : username });
-            if (userCheck.engineering == newEngineer && userCheck.minerate == newrate) {
+            if (userCheck.engineering == newEngineer) {
                 await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + newEngineer, '#86fc86')
                 return true;
             }
-            else {
-                console.log('Engineering upgrade failed for ' + username);
-            }
+    
         }
     }
     catch (err) {
@@ -182,7 +176,6 @@ async function defense(username, quantity) {
             console.log(username + ' tried to upgrade defense but is already cached');
             return false;
         }
-
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
@@ -191,24 +184,22 @@ async function defense(username, quantity) {
             return true;
         }
 
+        var cost = Math.pow(user.defense/10, 2);
+        var newDefense = user.defense + 10;
+
         while (true) {
-            let cost = Math.pow(user.defense/10, 2);
-            var newDefense = user.defense + 10;
             if (quantity == cost){
                 await collection.updateOne({username : username}, {$set: {defense: newDefense}}); 
             }
             else {
                 return true;
             }
-
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.defense == newDefense) {
                 webhook('Upgrade', username + ' upgraded defense to ' + newDefense, '#86fc86');
                 return true;
             }
-            else {
-                console.log('Defense upgrade failed for ' + username);
-            }
+
         
         }
     }
@@ -243,10 +234,10 @@ async function damage(username, quantity) {
             return true;
         }
 
-        while (true) {
-            var cost = Math.pow(user.damage/10, 2);
-            var newDamage = user.damage + 10;
+        var cost = Math.pow(user.damage/10, 2);
+        var newDamage = user.damage + 10;
 
+        while (true) {
             if (quantity == cost){
                 await collection.updateOne({username: username}, {$set: {damage: newDamage}});
             }
@@ -296,10 +287,10 @@ async function contribute(username, quantity) {
 
         //check starting favor
         let startFavor = user.favor;
+        var qty = parseFloat(quantity);
+        var newFavor = user.favor + qty;
+        
         while (true) {
-            var qty = parseFloat(quantity);
-            var newFavor = user.favor + qty;
-
             await collection.updateOne({username: username}, {$set: {favor: newFavor}});
 
             var userCheck = await collection.findOne({ username : username });
