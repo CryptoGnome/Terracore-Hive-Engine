@@ -147,7 +147,6 @@ async function engineering(username, quantity) {
             }
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.engineering == newEngineer) {
-                await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + newEngineer, '#86fc86')
                 return true;
             }
     
@@ -196,7 +195,6 @@ async function defense(username, quantity) {
             }
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.defense == newDefense) {
-                webhook('Upgrade', username + ' upgraded defense to ' + newDefense, '#86fc86');
                 return true;
             }
 
@@ -247,7 +245,6 @@ async function damage(username, quantity) {
 
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.damage == newDamage) {
-                webhook('Upgrade', username + ' upgraded damage to ' + newDamage, '#86fc86');
                 return true;
             }
         }
@@ -295,7 +292,6 @@ async function contribute(username, quantity) {
 
             var userCheck = await collection.findOne({ username : username });
             if (userCheck.favor == startFavor + qty) {
-                webhook("New Contribution", "User " + username + " contributed " + qty.toString() + " favor", '#c94ce6')
                 var stats = db.collection('stats');
                 var globalFavor = await stats.findOne({date: "global"});
                 var newGlobalFavor = globalFavor.currentFavor + qty;
@@ -414,6 +410,7 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
+                    await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + newEngineer, '#86fc86')
                 }
             }
             else if (transaction.type == 'contribute') {
@@ -421,6 +418,7 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
+                    await webhook('New Contribution', 'User ' + username + ' contributed ' + qty.toString() + ' favor', '#c94ce6')
                 }
             }
             else if (transaction.type == 'defense') {
@@ -428,6 +426,7 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
+                    await webhook('New Defense', 'User ' + username + ' upgraded their defense to ' + newDefense, '#86fc86')
                 }
             }
             else if (transaction.type == 'damage') {
@@ -435,6 +434,7 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
+                    await webhook('New Damage', 'User ' + username + ' upgraded their damage to ' + newDamage, '#86fc86')
                 }
             }
             else if (transaction.type == 'buy_crate') {
@@ -442,6 +442,7 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
+                    
                 }
             }
             else{
