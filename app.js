@@ -123,12 +123,18 @@ async function storeRejectedHash(hash, username) {
 //engineering upgrade
 async function engineering(username, quantity) {
     try{
+        var cache  = await cacheUser(username);
+        if(cache) {
+            console.log(username + ' tried to upgrade engineering but is already cached');
+            return false;
+        }
+
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
 
         if (!user) {
-            return;
+            return true;
         }
 
         var cost = Math.pow(user.engineering, 2);
@@ -140,13 +146,13 @@ async function engineering(username, quantity) {
                 await collection.updateOne({username: username}, {$set: {minerate: newrate, engineering: newEngineer}});
             }   
             else {
-                return;
+                return true;
             }
 
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.engineering == newEngineer && userCheck.minerate == newrate) {
                 await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + newEngineer, '#86fc86')
-                return;
+                return true;
             }
             else {
                 console.log('Engineering upgrade failed for ' + username);
@@ -159,20 +165,30 @@ async function engineering(username, quantity) {
             process.exit(1);
         }
         else {
-            console.log(err);
+            webhook('Error', 'Error upgrading engineering for ' + username + ' ' + err, '#ff0000');
         }
+    }
+    finally {
+        await clearCache(username);
+        return true;
     }
 
 }
 //defense upgrade
 async function defense(username, quantity) {
     try{
+        var cache  = await cacheUser(username);
+        if(cache) {
+            console.log(username + ' tried to upgrade defense but is already cached');
+            return false;
+        }
+
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
 
         if (!user) {
-            return;
+            return true;
         }
 
         while (true) {
@@ -182,13 +198,13 @@ async function defense(username, quantity) {
                 await collection.updateOne({username : username}, {$set: {defense: newDefense}}); 
             }
             else {
-                return;
+                return true;
             }
 
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.defense == newDefense) {
                 webhook('Upgrade', username + ' upgraded defense to ' + newDefense, '#86fc86');
-                return;
+                return true;
             }
             else {
                 console.log('Defense upgrade failed for ' + username);
@@ -205,16 +221,26 @@ async function defense(username, quantity) {
             console.log(err);
         }
     }
+    finally {
+        await clearCache(username);
+        return true;
+    }
 }
 //damage upgrade
 async function damage(username, quantity) {
     try{
+        var cache  = await cacheUser(username);
+        if(cache) {
+            console.log(username + ' tried to upgrade damage but is already cached');
+            return false;
+        }
+
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
 
         if (!user) {
-            return;
+            return true;
         }
 
         while (true) {
@@ -225,13 +251,13 @@ async function damage(username, quantity) {
                 await collection.updateOne({username: username}, {$set: {damage: newDamage}});
             }
             else {
-                return;
+                return true;
             }
 
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.damage == newDamage) {
                 webhook('Upgrade', username + ' upgraded damage to ' + newDamage, '#86fc86');
-                return;
+                return true;
             }
         }
     }
@@ -244,18 +270,28 @@ async function damage(username, quantity) {
             console.log(err);
         }
     }
+    finally {
+        await clearCache(username);
+        return true;
+    }
 
 }
 //contributor upgrade
 async function contribute(username, quantity) {
     try{
+        var cache  = await cacheUser(username);
+        if(cache) {
+            console.log(username + ' tried to upgrade contributor but is already cached');
+            return false;
+        }
+
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({username: username});
 
         //check if user exists
         if (!user) {
-            return;
+            return true;
         }
 
         //check starting favor
@@ -273,7 +309,7 @@ async function contribute(username, quantity) {
                 var globalFavor = await stats.findOne({date: "global"});
                 var newGlobalFavor = globalFavor.currentFavor + qty;
                 await stats.updateOne({date: "global"}, {$set: {currentFavor: newGlobalFavor}});
-                return;
+                return true;
             }
             
         }
@@ -286,6 +322,10 @@ async function contribute(username, quantity) {
         else {
             console.log(err);
         }
+    }
+    finally {
+        await clearCache(username);
+        return true;
     }
 
 }
@@ -379,30 +419,44 @@ async function sendTransactions() {
         for (let i = 0; i < transactions.length; i++) {
             let transaction = transactions[i];
             if(transaction.type == 'engineering') {
-                await engineering(transaction.username, transaction.quantity);
-                storeHash(transaction.hash, transaction.username);
+                var result = await engineering(transaction.username, transaction.quantity);
+                if (result) {
+                    await storeHash(transaction.hash, transaction.username);
+                    await collection.deleteOne({_id: transaction._id});
+                }
             }
             else if (transaction.type == 'contribute') {
-                await contribute(transaction.username, transaction.quantity);
-                storeHash(transaction.hash, transaction.username);
+                var result = await contribute(transaction.username, transaction.quantity);
+                if (result) {
+                    await storeHash(transaction.hash, transaction.username);
+                    await collection.deleteOne({_id: transaction._id});
+                }
             }
             else if (transaction.type == 'defense') {
-                await defense(transaction.username, transaction.quantity);
-                storeHash(transaction.hash, transaction.username);
+                var result = await defense(transaction.username, transaction.quantity);
+                if (result) {
+                    await storeHash(transaction.hash, transaction.username);
+                    await collection.deleteOne({_id: transaction._id});
+                }
             }
             else if (transaction.type == 'damage') {
-                await damage(transaction.username, transaction.quantity);
-                storeHash(transaction.hash, transaction.username);
+                var result = await damage(transaction.username, transaction.quantity);
+                if (result) {
+                    await storeHash(transaction.hash, transaction.username);
+                    await collection.deleteOne({_id: transaction._id});
+                }
             }
             else if (transaction.type == 'buy_crate') {
-                await buy_crate(transaction.username, transaction.quantity);
-                storeHash(transaction.hash, transaction.username);
+                var result = await buy_crate(transaction.username, transaction.quantity);
+                if (result) {
+                    await storeHash(transaction.hash, transaction.username);
+                    await collection.deleteOne({_id: transaction._id});
+                }
             }
             else{
                 console.log('unknown transaction type');
+                await collection.deleteOne({_id: transaction._id});
             } 
-            //remove transaction from queue
-            await collection.deleteOne({_id: transaction._id});
         }
         return true;
     }
@@ -425,6 +479,54 @@ async function checkTransactions() {
         setTimeout(checkTransactions, 1000);
     }
 }
+
+//creatre function to cache a user
+async function cacheUser(username) {
+    try{
+        var db = client.db(dbName);
+        const cache = await db.collection('cached').find({username: username}).limit(1).next();
+        if (cache) {
+            //check to see if user has been in cache for more than 5 seconds
+            if (cache.timestamp < (Date.now() - 5000)) {
+                //remove user from cache
+                await db.collection('cached').deleteOne({username: username});
+            }
+            console.log("User in Cache...Skipping");
+            return true;
+        } 
+        //add username to cache
+        await db.collection('cached').updateOne({username: username}, {$set: {username: username, timestamp: Date.now()}}, {upsert: true})
+        return false;
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+            return false;
+        }
+    }
+}
+
+//create a function to clear user from cache
+async function clearCache(username) {
+    try{
+        var db = client.db(dbName);
+        await db.collection('cached').deleteOne({username: username});
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+        }
+    }
+}
+
 
 
 var lastevent = Date.now();
