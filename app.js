@@ -624,9 +624,8 @@ async function listen() {
 }
 
 
-listen();
 lastevent = Date.now();
-
+lastCheck = Date.now();
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     //console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
@@ -651,6 +650,6 @@ setInterval(function() {
     }
 }, 1000);
 
-
+listen();
 
 
