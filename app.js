@@ -635,7 +635,13 @@ async function listen() {
             }
         }
         catch(err){
-            console.log(err);
+            ///check if it is a type error
+            if (err instanceof TypeError) {
+                //nothing
+            }
+            else {
+                console.log(err);
+            }
         }
 
     });
