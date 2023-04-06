@@ -147,6 +147,7 @@ async function engineering(username, quantity) {
             }
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.engineering == newEngineer) {
+                webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
                 return true;
             }
     
@@ -195,6 +196,7 @@ async function defense(username, quantity) {
             }
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.defense == newDefense) {
+                webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                 return true;
             }
 
@@ -245,6 +247,7 @@ async function damage(username, quantity) {
 
             let userCheck = await collection.findOne({ username : username });
             if (userCheck.damage == newDamage) {
+                webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
                 return true;
             }
         }
@@ -296,6 +299,7 @@ async function contribute(username, quantity) {
                 var globalFavor = await stats.findOne({date: "global"});
                 var newGlobalFavor = globalFavor.currentFavor + qty;
                 await stats.updateOne({date: "global"}, {$set: {currentFavor: newGlobalFavor}});
+                webhook('Contributor', username + ' contributed ' + qty + ' favor', '#00ff00');
                 return true;
             }
             
@@ -400,6 +404,7 @@ async function sendTransaction(username, quantity, type, hash){
 //create a function that can be called to send all transactions in the queue
 async function sendTransactions() {
     try{
+        lastCheck = Date.now();
         let db = client.db(dbName);
         let collection = db.collection('he-transactions');
         let transactions = await collection.find({}).toArray();
@@ -410,7 +415,6 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
-                    await webhook('Engineering Upgrade', username + ' has upgraded their engineering to ' + newEngineer, '#86fc86')
                 }
             }
             else if (transaction.type == 'contribute') {
@@ -418,7 +422,6 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
-                    await webhook('New Contribution', 'User ' + username + ' contributed ' + qty.toString() + ' favor', '#c94ce6')
                 }
             }
             else if (transaction.type == 'defense') {
@@ -426,7 +429,6 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
-                    await webhook('New Defense', 'User ' + username + ' upgraded their defense to ' + newDefense, '#86fc86')
                 }
             }
             else if (transaction.type == 'damage') {
@@ -434,7 +436,6 @@ async function sendTransactions() {
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
-                    await webhook('New Damage', 'User ' + username + ' upgraded their damage to ' + newDamage, '#86fc86')
                 }
             }
             else if (transaction.type == 'buy_crate') {
@@ -522,6 +523,7 @@ async function clearCache(username) {
 
 
 var lastevent = Date.now();
+var lastCheck = Date.now();
 //aysncfunction to start listening for events
 async function listen() {
     await findNode();
@@ -529,88 +531,93 @@ async function listen() {
     const ssc = new SSC(node);
     ssc.stream((err, res) => {
         lastevent = Date.now();
-        if (res['transactions']) {
-            //loop through transactions and look for events
-            try{
-                for (var i = 0; i < res['transactions'].length; i++) {
-                    //check if contract is token
-                    if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'transfer') {
-                        //convert payload to json
-                        var payload = JSON.parse(res['transactions'][i]['payload']);
-                        //check if to is "null" which is burn address
-                        if (payload.to == 'null' && payload.symbol == 'SCRAP') {
-                            //get memo 
-                            var memo = {
-                                event: payload.memo.split('-')[0],
-                                hash: payload.memo.split('-')[1],
-                            }
-                            var from = res['transactions'][i]['sender'];
-                            var quantity = payload.quantity;
-                            var hashStore = payload.memo;
+        try{
+            if (res['transactions']) {
+                //loop through transactions and look for events
+                try{
+                    for (var i = 0; i < res['transactions'].length; i++) {
+                        //check if contract is token
+                        if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'transfer') {
+                            //convert payload to json
+                            var payload = JSON.parse(res['transactions'][i]['payload']);
+                            //check if to is "null" which is burn address
+                            if (payload.to == 'null' && payload.symbol == 'SCRAP') {
+                                //get memo 
+                                var memo = {
+                                    event: payload.memo.split('-')[0],
+                                    hash: payload.memo.split('-')[1],
+                                }
+                                var from = res['transactions'][i]['sender'];
+                                var quantity = payload.quantity;
+                                var hashStore = payload.memo;
 
-                            if (res['transactions'][i].logs.includes('errors')) {
-                                storeRejectedHash(hashStore, from);
-                                return;
+                                if (res['transactions'][i].logs.includes('errors')) {
+                                    storeRejectedHash(hashStore, from);
+                                    return;
+                                }
+
+                                //check if memo is engineering
+                                if (memo.event == 'terracore_engineering'){
+                                    sendTransaction(from, quantity, 'engineering', hashStore);
+                                    return;
+                                }
+                                else if (memo.event == 'terracore_damage'){
+                                    sendTransaction(from, quantity, 'damage', hashStore);
+                                    return;
+                                }
+                                else if (memo.event == 'terracore_defense'){
+                                    sendTransaction(from, quantity, 'defense', hashStore);
+                                    return;
+                                }
+                                else if (memo.event == 'terracore_contribute'){
+                                    sendTransaction(from, quantity, 'contribute', hashStore);
+                                    return;
+                                }
+                                else if (memo.event == 'tm_buy_crate'){
+                                    sendTransaction(from, quantity, 'buy_crate', hashStore);
+                                    return;
+                                }
+
+                                else{
+                                    console.log('Unknown event');
+                                    return;
+                                }
+                                        
                             }
 
-                            //check if memo is engineering
-                            if (memo.event == 'terracore_engineering'){
-                                sendTransaction(from, quantity, 'engineering', hashStore);
-                                return;
-                            }
-                            else if (memo.event == 'terracore_damage'){
-                                sendTransaction(from, quantity, 'damage', hashStore);
-                                return;
-                            }
-                            else if (memo.event == 'terracore_defense'){
-                                sendTransaction(from, quantity, 'defense', hashStore);
-                                return;
-                            }
-                            else if (memo.event == 'terracore_contribute'){
-                                sendTransaction(from, quantity, 'contribute', hashStore);
-                                return;
-                            }
-                            else if (memo.event == 'tm_buy_crate'){
-                                sendTransaction(from, quantity, 'buy_crate', hashStore);
-                                return;
-                            }
-
-                            else{
-                                console.log('Unknown event');
-                                return;
-                            }
-                                       
                         }
+                        else if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'stake') {
+                            //convert payload to json
+                            var payload = JSON.parse(res['transactions'][i]['payload']);
 
-                    }
-                    else if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'stake') {
-                        //convert payload to json
-                        var payload = JSON.parse(res['transactions'][i]['payload']);
-
-                        //check if symbol is scrap
-                        if (payload.symbol == 'SCRAP') {
-                            var sender = res['transactions'][i]['sender'];
-                            var qty = payload.quantity;
-                            var hashStore = payload.memo;
-                            if (res['transactions'][i].logs.includes('errors')) {
-                                storeRejectedHash(hashStore, sender);
+                            //check if symbol is scrap
+                            if (payload.symbol == 'SCRAP') {
+                                var sender = res['transactions'][i]['sender'];
+                                var qty = payload.quantity;
+                                var hashStore = payload.memo;
+                                if (res['transactions'][i].logs.includes('errors')) {
+                                    storeRejectedHash(hashStore, sender);
+                                    return;
+                                }
+                                webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
+                                storeHash(hashStore, sender);
                                 return;
                             }
-                            webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
-                            storeHash(hashStore, sender);
-                            return;
+
+
                         }
-
-
                     }
                 }
+                catch(err){
+                    console.log(err);
+                }
             }
-            catch(err){
-                console.log(err);
+            else {
+                console.log('No transactions');
             }
         }
-        else {
-            console.log('No transactions');
+        catch(err){
+            console.log(err);
         }
 
     });
@@ -619,12 +626,28 @@ async function listen() {
 
 listen();
 lastevent = Date.now();
+
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
-    console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
+    //console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
     if (Date.now() - lastevent > 60000) {
         console.log('No events received in 60 seconds, shutting down so pm2 can restart');
         process.exit(1);
+    }
+}, 1000);
+
+var heartbeat = 0;
+setInterval(function() {
+    //console.log('Last Transaction Check: ' + (Date.now() - lastCheck) + ' ms ago');
+    heartbeat++;
+    if (heartbeat == 5) {
+        //log how man seconds since last lastCheck
+        console.log('HeartBeat: ' + (Date.now() - lastCheck) + 'ms ago');
+        heartbeat = 0;
+    }
+    if (Date.now() - lastCheck > 90000) {
+        console.log('Error : No events received in 90 seconds, shutting down so PM2 can restart & try to reconnect to Resolve...');
+        process.exit();
     }
 }, 1000);
 
