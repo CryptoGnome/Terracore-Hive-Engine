@@ -16,4 +16,4 @@ git pull
 
 # dev
 ---------
-cd Terracore-Hive-Engine; pm2 stop 1; git pull; sleep 0.2; pm2 start 1; pm2 logs;
+cd Terracore-Hive-Engine; pm2 stop 0; git pull; sleep 0.2; pm2 start 0; pm2 logs;
