@@ -140,7 +140,12 @@ async function engineering(username, quantity) {
 
         while (true) {
             if (quantity == cost){  
-                await collection.updateOne({username: username}, {$set: {engineering: newEngineer}});
+                while(true) {
+                    var verify = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}});
+                    if (verify.modifiedCount == 1) {
+                        break;
+                    }
+                }
             }   
             else {
                 return true;
@@ -189,7 +194,12 @@ async function defense(username, quantity) {
 
         while (true) {
             if (quantity == cost){
-                await collection.updateOne({username : username}, {$set: {defense: newDefense}}); 
+                while(true) {
+                    var verify = await collection.updateOne({username : username}, {$set: {defense: newDefense}}); 
+                    if (verify.modifiedCount == 1) {
+                        break;
+                    }
+                }
             }
             else {
                 return true;
@@ -239,7 +249,12 @@ async function damage(username, quantity) {
 
         while (true) {
             if (quantity == cost){
-                await collection.updateOne({username: username}, {$set: {damage: newDamage}});
+                while(true) {
+                    var verify = await collection.updateOne({username: username}, {$set: {damage: newDamage}});
+                    if(verify.modifiedCount == 1) {
+                        break;
+                    }
+                }
             }
             else {
                 return true;
@@ -291,8 +306,12 @@ async function contribute(username, quantity) {
         var newFavor = user.favor + qty;
         
         while (true) {
-            await collection.updateOne({username: username}, {$set: {favor: newFavor}});
-
+            while(true) {
+                var verify = await collection.updateOne({username: username}, {$set: {favor: newFavor}});
+                if (verify.modifiedCount == 1) {
+                    break;
+                }
+            }
             var userCheck = await collection.findOne({ username : username });
             if (userCheck.favor == startFavor + qty) {
                 var stats = db.collection('stats');
@@ -302,7 +321,6 @@ async function contribute(username, quantity) {
                 webhook('Contributor', username + ' contributed ' + qty + ' favor', '#00ff00');
                 return true;
             }
-            
         }
     }
     catch (err) {
