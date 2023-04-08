@@ -436,29 +436,29 @@ async function sendTransactions() {
                 }
             }
             else if (transaction.type == 'contribute') {
-                var result = await contribute(transaction.username, transaction.quantity);
-                if (result) {
+                var result2 = await contribute(transaction.username, transaction.quantity);
+                if (result2) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
             else if (transaction.type == 'defense') {
-                var result = await defense(transaction.username, transaction.quantity);
-                if (result) {
+                var result3 = await defense(transaction.username, transaction.quantity);
+                if (result3) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
             else if (transaction.type == 'damage') {
-                var result = await damage(transaction.username, transaction.quantity);
-                if (result) {
+                var result4 = await damage(transaction.username, transaction.quantity);
+                if (result4) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
             else if (transaction.type == 'buy_crate') {
-                var result = await buy_crate(transaction.username, transaction.quantity);
-                if (result) {
+                var result5 = await buy_crate(transaction.username, transaction.quantity);
+                if (result5) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
                     
@@ -655,6 +655,7 @@ setInterval(function() {
     //console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
     if (Date.now() - lastevent > 60000) {
         console.log('No events received in 60 seconds, shutting down so pm2 can restart');
+        client.close();
         process.exit(1);
     }
 }, 1000);
@@ -670,6 +671,7 @@ setInterval(function() {
     }
     if (Date.now() - lastCheck > 90000) {
         console.log('Error : No events received in 90 seconds, shutting down so PM2 can restart & try to reconnect to Resolve...');
+        client.close();
         process.exit();
     }
 }, 1000);
