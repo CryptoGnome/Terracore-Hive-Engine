@@ -128,29 +128,25 @@ async function engineering(username, quantity) {
             console.log(username + ' tried to upgrade engineering but is already cached');
             return false;
         }
-
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
+
         if (!user) {
             return true;
         }
-        var cost = Math.pow(user.engineering, 2);
-        var newEngineer = user.engineering + 1;
+        let cost = Math.pow(user.engineering, 2);
+        let newEngineer = user.engineering + 1;
 
         while (true) {
             if (quantity == cost){  
-                while(true) {
-                    var verify = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}});
-                    if (verify.modifiedCount == 1) {
-                        break;
-                    }
-                }
+                await collection.updateOne({username: username}, {$set: {engineering: newEngineer}});
             }   
             else {
                 return true;
             }
-            let userCheck = await collection.findOne({ username : username });
+            
+            var userCheck = await collection.findOne({ username : username });
             if (userCheck.engineering == newEngineer) {
                 webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
                 return true;
@@ -169,7 +165,6 @@ async function engineering(username, quantity) {
     }
     finally {
         await clearCache(username);
-        return true;
     }
 
 }
@@ -189,22 +184,18 @@ async function defense(username, quantity) {
             return true;
         }
 
-        var cost = Math.pow(user.defense/10, 2);
-        var newDefense = user.defense + 10;
+        let cost = Math.pow(user.defense/10, 2);
+        let newDefense = user.defense + 10;
 
         while (true) {
             if (quantity == cost){
-                while(true) {
-                    var verify = await collection.updateOne({username : username}, {$set: {defense: newDefense}}); 
-                    if (verify.modifiedCount == 1) {
-                        break;
-                    }
-                }
+                await collection.updateOne({username : username}, {$set: {defense: newDefense}});   
             }
             else {
                 return true;
             }
-            let userCheck = await collection.findOne({ username : username });
+
+            var userCheck = await collection.findOne({ username : username });
             if (userCheck.defense == newDefense) {
                 webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                 return true;
@@ -224,7 +215,6 @@ async function defense(username, quantity) {
     }
     finally {
         await clearCache(username);
-        return true;
     }
 }
 //damage upgrade
@@ -244,23 +234,18 @@ async function damage(username, quantity) {
             return true;
         }
 
-        var cost = Math.pow(user.damage/10, 2);
-        var newDamage = user.damage + 10;
+        let cost = Math.pow(user.damage/10, 2);
+        let newDamage = user.damage + 10;
 
         while (true) {
             if (quantity == cost){
-                while(true) {
-                    var verify = await collection.updateOne({username: username}, {$set: {damage: newDamage}});
-                    if(verify.modifiedCount == 1) {
-                        break;
-                    }
-                }
+                await collection.updateOne({username: username}, {$set: {damage: newDamage}});
             }
             else {
                 return true;
             }
 
-            let userCheck = await collection.findOne({ username : username });
+            var userCheck = await collection.findOne({ username : username });
             if (userCheck.damage == newDamage) {
                 webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
                 return true;
@@ -278,7 +263,6 @@ async function damage(username, quantity) {
     }
     finally {
         await clearCache(username);
-        return true;
     }
 
 }
@@ -302,16 +286,13 @@ async function contribute(username, quantity) {
 
         //check starting favor
         let startFavor = user.favor;
-        var qty = parseFloat(quantity);
-        var newFavor = user.favor + qty;
+        let qty = parseFloat(quantity);
+        let newFavor = user.favor + qty;
         
         while (true) {
-            while(true) {
-                var verify = await collection.updateOne({username: username}, {$set: {favor: newFavor}});
-                if (verify.modifiedCount == 1) {
-                    break;
-                }
-            }
+          
+            await collection.updateOne({username: username}, {$set: {favor: newFavor}});
+
             var userCheck = await collection.findOne({ username : username });
             if (userCheck.favor == startFavor + qty) {
                 var stats = db.collection('stats');
@@ -334,7 +315,6 @@ async function contribute(username, quantity) {
     }
     finally {
         await clearCache(username);
-        return true;
     }
 
 }
