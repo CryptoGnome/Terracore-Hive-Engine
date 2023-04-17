@@ -324,24 +324,38 @@ async function contribute(username, quantity) {
 ////NFT FUNCTIONS/////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //THESE ARE TEST FUNCTIONS FOR THE NFT MARKETPLACE IF YOU SEND SCRAP BEFORE LAUNCH YOU WILL LOOSE THE NFTS THAT POPULATE
+
+async function fetch_price(){
+    let response = await fetch('https://info-api.tribaldex.com/market/ohlcv?symbol=SCRAP&interval=hourly');
+    let data = await response.json();
+	if (data.length < 1) {
+		console.log("invalid response");
+		return 0;
+	}
+    let prices = data.slice(-8);
+	let average = prices.reduce((a, b) => a + parseFloat(b.close), 0) / prices.length;
+    console.log(average);
+    return average;
+}
+
+
 async function buy_crate(owner, quantity){
     try{
         //load crate collection
         let db = client.db(dbName); 
-        var collection = db.collection('crates');
-
+        var collection = db.collection('price_feed');
+        var price = await collection.findOne({date: "global"});
 
         //check quantity sent if 25 SCRAP == common chest 50 SCRAP == uncommon chest
+        //look for price.price
         if (quantity == 0.1){
             var rarity = 'common';
-        }
-        else if (quantity == 0.2){
-            var rarity = 'uncommon';
         }
         else {
             return;
         }
 
+        collection = db.collection('crates');
         //create crate object
         let crate = new Object();
         crate.name = rarity.charAt(0).toUpperCase() + rarity.slice(1) + ' Loot Crate';
@@ -349,6 +363,7 @@ async function buy_crate(owner, quantity){
         crate.owner = owner;
         crate.item_number = await collection.countDocuments() + 1;
         crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
+        crate.equiped = false;
         //add market object to crate
         let market = new Object();
         market.listed = false;
@@ -628,8 +643,6 @@ async function listen() {
 }
 
 
-lastevent = Date.now();
-lastCheck = Date.now();
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     //console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
