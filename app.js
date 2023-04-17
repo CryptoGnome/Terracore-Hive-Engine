@@ -325,20 +325,6 @@ async function contribute(username, quantity) {
 //////////////////////////////////////////////////////////////////////////////
 //THESE ARE TEST FUNCTIONS FOR THE NFT MARKETPLACE IF YOU SEND SCRAP BEFORE LAUNCH YOU WILL LOOSE THE NFTS THAT POPULATE
 
-async function fetch_price(){
-    let response = await fetch('https://info-api.tribaldex.com/market/ohlcv?symbol=SCRAP&interval=hourly');
-    let data = await response.json();
-	if (data.length < 1) {
-		console.log("invalid response");
-		return 0;
-	}
-    let prices = data.slice(-8);
-	let average = prices.reduce((a, b) => a + parseFloat(b.close), 0) / prices.length;
-    console.log(average);
-    return average;
-}
-
-
 async function buy_crate(owner, quantity){
     try{
         //load crate collection
