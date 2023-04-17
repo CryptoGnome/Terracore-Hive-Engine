@@ -352,7 +352,7 @@ async function buy_crate(owner, quantity){
             var rarity = 'common';
         }
         else {
-            return;
+            return true;
         }
 
         collection = db.collection('crates');
@@ -381,7 +381,7 @@ async function buy_crate(owner, quantity){
         console.log('Create Purchaed: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
         //send webhook to discord
         webhook('New Crate Purchase', 'New crate purchased by ' + owner + ' with rarity: ' + crate.rarity, ' for ' + quantity + ' SCRAP', '#86fc86');
-        return;
+        return true;
     }
     catch(err){
         if(err instanceof MongoTopologyClosedError) {
@@ -390,6 +390,7 @@ async function buy_crate(owner, quantity){
         }
         else{
             console.log(err);
+            return false;
         }
     }
 }
