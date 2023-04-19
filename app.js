@@ -288,7 +288,7 @@ async function globalFavorUpdate(qty){
     let delay = 500;
 
     for (let i = 0; i < maxAttempts; i++) {
-        const result = await stats.updateOne({ date: 'global' }, { $inc: { favor: qty } });
+        const result = await stats.updateOne({ date: 'global' }, { $inc: { currentFavor: qty } });
         if (result.acknowledged == true && result.modifiedCount == 1) {
             return true;
         }
