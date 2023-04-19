@@ -138,21 +138,25 @@ async function engineering(username, quantity) {
         let cost = Math.pow(user.engineering, 2);
         let newEngineer = user.engineering + 1;
 
-        while (true) {
-            if (quantity == cost){  
-                await collection.updateOne({username: username}, {$set: {engineering: newEngineer}});
-            }   
+
+        let maxAttempts = 5;
+        let delay = 500;
+        for (let i = 0; i < maxAttempts; i++) {
+            if (quantity == cost){ 
+                let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}});
+                if(update.acknowledged == true && update.modifiedCount == 1) {
+                    webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
+                    return true;
+                }
+            }
             else {
                 return true;
             }
-            
-            var userCheck = await collection.findOne({ username : username });
-            if (userCheck.engineering == newEngineer) {
-                webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
-                return true;
-            }
-    
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2.5; // exponential backoff  
         }
+        //if we get here, we've tried maxAttempts times
+        return true;
     }
     catch (err) {
         if(err instanceof MongoTopologyClosedError) {
@@ -187,22 +191,26 @@ async function defense(username, quantity) {
         let cost = Math.pow(user.defense/10, 2);
         let newDefense = user.defense + 10;
 
-        while (true) {
-            if (quantity == cost){
-                await collection.updateOne({username : username}, {$set: {defense: newDefense}});   
+        let maxAttempts = 5;
+        let delay = 500;
+        for (let i = 0; i < maxAttempts; i++) {
+            if (quantity == cost){ 
+                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}});
+                if(update.acknowledged == true && update.modifiedCount == 1) {
+                    webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
+                    return true;
+                }
             }
             else {
                 return true;
             }
-
-            var userCheck = await collection.findOne({ username : username });
-            if (userCheck.defense == newDefense) {
-                webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
-                return true;
-            }
-
-        
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2.5; // exponential backoff  
         }
+        //if we get here, we've tried maxAttempts times
+        return true;
+
+
     }
     catch (err) {
         if(err instanceof MongoTopologyClosedError) {
@@ -237,20 +245,25 @@ async function damage(username, quantity) {
         let cost = Math.pow(user.damage/10, 2);
         let newDamage = user.damage + 10;
 
-        while (true) {
-            if (quantity == cost){
-                await collection.updateOne({username: username}, {$set: {damage: newDamage}});
+        let maxAttempts = 5;
+        let delay = 500;
+        for (let i = 0; i < maxAttempts; i++) {
+            if (quantity == cost){ 
+                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}});
+                if(update.acknowledged == true && update.modifiedCount == 1) {
+                    webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
+                    return true;
+                }
             }
             else {
                 return true;
             }
-
-            var userCheck = await collection.findOne({ username : username });
-            if (userCheck.damage == newDamage) {
-                webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
-                return true;
-            }
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2.5; // exponential backoff  
         }
+        //if we get here, we've tried maxAttempts times
+        return true;
+                
     }
     catch (err) {
         if(err instanceof MongoTopologyClosedError) {
@@ -266,6 +279,26 @@ async function damage(username, quantity) {
     }
 
 }
+
+//update global favor
+async function globalFavorUpdate(qty){
+    let db = client.db(dbName);
+    const stats = db.collection('stats');
+    let maxAttempts = 3;
+    let delay = 500;
+
+    for (let i = 0; i < maxAttempts; i++) {
+        const result = await stats.updateOne({ date: 'global' }, { $inc: { favor: qty } });
+        if (result.acknowledged == true && result.modifiedCount == 1) {
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2.5; // exponential backoff
+    }
+    return false;
+
+}
+
 //contributor upgrade
 async function contribute(username, quantity) {
     try{
@@ -285,24 +318,25 @@ async function contribute(username, quantity) {
         }
 
         //check starting favor
-        let startFavor = user.favor;
         let qty = parseFloat(quantity);
         let newFavor = user.favor + qty;
-        
-        while (true) {
-          
-            await collection.updateOne({username: username}, {$set: {favor: newFavor}});
 
-            var userCheck = await collection.findOne({ username : username });
-            if (userCheck.favor == startFavor + qty) {
-                var stats = db.collection('stats');
-                var globalFavor = await stats.findOne({date: "global"});
-                var newGlobalFavor = globalFavor.currentFavor + qty;
-                await stats.updateOne({date: "global"}, {$set: {currentFavor: newGlobalFavor}});
+        let maxAttempts = 3;
+        let delay = 500;
+        for (let i = 0; i < maxAttempts; i++) {
+            let update = await collection.updateOne({username: username}, {$set: {favor: newFavor}});
+            if(update.acknowledged == true && update.modifiedCount == 1) {
                 webhook('Contributor', username + ' contributed ' + qty + ' favor', '#00ff00');
+                //update global favor 
+                await globalFavorUpdate(qty);
                 return true;
             }
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2.5; // exponential backoff  
         }
+        //if we get here, we've tried maxAttempts times
+        return true;
+
     }
     catch (err) {
         if(err instanceof MongoTopologyClosedError) {
@@ -332,9 +366,8 @@ async function buy_crate(owner, quantity){
         var collection = db.collection('price_feed');
         var price = await collection.findOne({date: "global"});
 
-        //check quantity sent if 25 SCRAP == common chest 50 SCRAP == uncommon chest
-        //look for price.price
-        if (quantity == 0.1){
+        if (quantity == price.price)
+        {
             var rarity = 'common';
         }
         else {
@@ -480,13 +513,13 @@ async function cacheUser(username) {
         var db = client.db(dbName);
         const cache = await db.collection('cached').find({username: username}).limit(1).next();
         if (cache) {
-            //check to see if user has been in cache for more than 5 seconds
-            if (cache.timestamp < (Date.now() - 5000)) {
-                //remove user from cache
-                await db.collection('cached').deleteOne({username: username});
+            if ((Date.now() - cache.timestamp) > 10000) {
+                return false;    
             }
-            console.log("User in Cache...Skipping");
-            return true;
+            else {
+                console.log("User: " + username + " in Cache for " + ((Date.now() - cache.timestamp) / 1000).toString() + " seconds");
+                return true;
+            }
         } 
         //add username to cache
         await db.collection('cached').updateOne({username: username}, {$set: {username: username, timestamp: Date.now()}}, {upsert: true})
@@ -495,6 +528,7 @@ async function cacheUser(username) {
     catch (err) {
         if(err instanceof MongoTopologyClosedError) {
             console.log('MongoDB connection closed');
+            client.close();
             process.exit(1);
         }
         else {
@@ -508,11 +542,24 @@ async function cacheUser(username) {
 async function clearCache(username) {
     try{
         var db = client.db(dbName);
-        await db.collection('cached').deleteOne({username: username});
+        let maxAttempts = 3;
+        let delay = 200;
+        for (let i = 0; i < maxAttempts; i++) {
+            let update = await db.collection('cached').deleteOne({username: username})
+            if(update.acknowledged == true && update.deletedCount == 1) {
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2.5; // exponential backoff  
+        }
+        //if it fails to clear cache after 10 attempts
+        console.log('Failed to clear cache for ' + username);
+        return;
     }
     catch (err) {
         if(err instanceof MongoTopologyClosedError) {
             console.log('MongoDB connection closed');
+            client.close();
             process.exit(1);
         }
         else {
