@@ -280,25 +280,6 @@ async function damage(username, quantity) {
 
 }
 
-//update global favor
-async function globalFavorUpdate(qty){
-    let db = client.db(dbName);
-    const stats = db.collection('stats');
-    let maxAttempts = 3;
-    let delay = 500;
-
-    for (let i = 0; i < maxAttempts; i++) {
-        const result = await stats.updateOne({ date: 'global' }, { $inc: { currentFavor: qty } });
-        if (result.acknowledged == true && result.modifiedCount == 1) {
-            return true;
-        }
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2.5; // exponential backoff
-    }
-    return false;
-
-}
-
 //contributor upgrade
 async function contribute(username, quantity) {
     try{
@@ -352,6 +333,27 @@ async function contribute(username, quantity) {
     }
 
 }
+
+//update global favor
+async function globalFavorUpdate(qty){
+    let db = client.db(dbName);
+    const stats = db.collection('stats');
+    let maxAttempts = 3;
+    let delay = 500;
+
+    for (let i = 0; i < maxAttempts; i++) {
+        const result = await stats.updateOne({ date: 'global' }, { $inc: { currentFavor: qty } });
+        if (result.acknowledged == true && result.modifiedCount == 1) {
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2.5; // exponential backoff
+    }
+    return false;
+
+}
+
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -438,11 +440,12 @@ async function sendTransaction(username, quantity, type, hash){
 //create a function that can be called to send all transactions in the queue
 async function sendTransactions() {
     try{
-        lastCheck = Date.now();
         let db = client.db(dbName);
         let collection = db.collection('he-transactions');
         let transactions = await collection.find({}).toArray();
         for (let i = 0; i < transactions.length; i++) {
+            lastCheck = Date.now();
+            lastevent = Date.now();
             let transaction = transactions[i];
             if(transaction.type == 'engineering') {
                 var result = await engineering(transaction.username, transaction.quantity);
@@ -681,8 +684,8 @@ async function listen() {
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     //console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 60000) {
-        console.log('No events received in 60 seconds, shutting down so pm2 can restart');
+    if (Date.now() - lastevent > 30000) {
+        console.log('No events received in 30 seconds, shutting down so pm2 can restart');
         client.close();
         process.exit(1);
     }
@@ -690,15 +693,14 @@ setInterval(function() {
 
 var heartbeat = 0;
 setInterval(function() {
-    //console.log('Last Transaction Check: ' + (Date.now() - lastCheck) + ' ms ago');
     heartbeat++;
     if (heartbeat == 5) {
         //log how man seconds since last lastCheck
         console.log('HeartBeat: ' + (Date.now() - lastCheck) + 'ms ago');
         heartbeat = 0;
     }
-    if (Date.now() - lastCheck > 90000) {
-        console.log('Error : No events received in 90 seconds, shutting down so PM2 can restart & try to reconnect to Resolve...');
+    if (Date.now() - lastCheck > 60000) {
+        console.log('Error : No events received in 60 seconds, shutting down so PM2 can restart & try to reconnect to Resolve...');
         client.close();
         process.exit();
     }
