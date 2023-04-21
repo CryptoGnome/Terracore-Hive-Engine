@@ -398,7 +398,7 @@ async function buy_crate(owner, quantity){
         crate.market = market;
 
         //add crate to database
-        collection.insertOne(crate);
+        await collection.insertOne(crate);
         console.log('Create Purchaed: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
         //send webhook to discord
         webhook('New Crate Purchase', 'New crate purchased by ' + owner + ' with rarity: ' + crate.rarity, ' for ' + quantity + ' SCRAP', '#86fc86');
