@@ -506,6 +506,7 @@ async function checkTransactions() {
     //console.log('Checking transactions');
     let done = await sendTransactions();
     if(done) {
+        lastCheck = Date.now();
         setTimeout(checkTransactions, 1000);
     }
 }
@@ -581,9 +582,9 @@ async function listen() {
     checkTransactions();
     const ssc = new SSC(node);
     ssc.stream((err, res) => {
-        lastevent = Date.now();
         try{
             if (res['transactions']) {
+                lastevent = Date.now();
                 //loop through transactions and look for events
                 try{
                     for (var i = 0; i < res['transactions'].length; i++) {
@@ -684,8 +685,8 @@ async function listen() {
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     //console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 30000) {
-        console.log('No events received in 30 seconds, shutting down so pm2 can restart');
+    if (Date.now() - lastevent > 20000) {
+        console.log('No events received in 20 seconds, shutting down so pm2 can restart');
         client.close();
         process.exit(1);
     }
@@ -699,8 +700,8 @@ setInterval(function() {
         console.log('HeartBeat: ' + (Date.now() - lastCheck) + 'ms ago');
         heartbeat = 0;
     }
-    if (Date.now() - lastCheck > 60000) {
-        console.log('Error : No events received in 60 seconds, shutting down so PM2 can restart & try to reconnect to Resolve...');
+    if (Date.now() - lastCheck > 30000) {
+        console.log('Error : No events received in 30 seconds, shutting down so PM2 can restart & try to reconnect to Resolve...');
         client.close();
         process.exit();
     }
