@@ -137,8 +137,9 @@ async function engineering(username, quantity) {
         let maxAttempts = 5;
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
-            if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}, $inc: {version: 1}});
+            if (quantity == cost){
+                //inc version & set engineering to new level
+                let update = await collection.updateOne({username: username}, {$inc: {version: 1}, $set: {engineering: newEngineer}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
                     return true;
@@ -150,7 +151,7 @@ async function engineering(username, quantity) {
             await new Promise(resolve => setTimeout(resolve, delay));
             delay *= 2.5; // exponential backoff  
         }
-        //if we get here, we've tried maxAttempts times
+        //if we get here, we've tried maxAttempts
         return true;
     }
     catch (err) {
@@ -182,7 +183,7 @@ async function defense(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}}, {$inc: {version: 1}});
+                let update = await collection.updateOne({username: username}, {$inc: {version: 1}, $set: {defense: newDefense}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                     return true;
@@ -227,7 +228,7 @@ async function damage(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}}, {$inc: {version: 1}});
+                let update = await collection.updateOne({username: username}, {$inc: {version: 1}, $set: {damage: newDamage}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
                     return true;
@@ -273,7 +274,7 @@ async function contribute(username, quantity) {
         let maxAttempts = 3;
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
-            let update = await collection.updateOne({username: username}, {$set: {favor: newFavor}}, {$inc: {version: 1}});
+            let update = await collection.updateOne({username: username}, {$inc: {version: 1}, $set: {favor: newFavor}});
             if(update.acknowledged == true && update.modifiedCount == 1) {
                 webhook('Contributor', username + ' contributed ' + qty + ' favor', '#00ff00');
                 //update global favor 
@@ -413,14 +414,14 @@ async function sendTransactions() {
             lastevent = Date.now();
             let transaction = transactions[i];
             if(transaction.type == 'engineering') {
-                var result = await engineering(transaction.username, transaction.quantity);
+                let result = await engineering(transaction.username, transaction.quantity);
                 if (result) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
             else if (transaction.type == 'contribute') {
-                var result2 = await contribute(transaction.username, transaction.quantity);
+                let result2 = await contribute(transaction.username, transaction.quantity);
                 if (result2) {
                     await storeHash(transaction.hash, transaction.username);
                     await collection.deleteOne({_id: transaction._id});
