@@ -123,11 +123,6 @@ async function storeRejectedHash(hash, username) {
 //engineering upgrade
 async function engineering(username, quantity) {
     try{
-        var cache  = await cacheUser(username);
-        if(cache) {
-            console.log(username + ' tried to upgrade engineering but is already cached');
-            return false;
-        }
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
@@ -143,7 +138,7 @@ async function engineering(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}});
+                let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}, $inc: {version: 1}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
                     return true;
@@ -167,19 +162,11 @@ async function engineering(username, quantity) {
             webhook('Error', 'Error upgrading engineering for ' + username + ' ' + err, '#ff0000');
         }
     }
-    finally {
-        await clearCache(username);
-    }
 
 }
 //defense upgrade
 async function defense(username, quantity) {
     try{
-        var cache  = await cacheUser(username);
-        if(cache) {
-            console.log(username + ' tried to upgrade defense but is already cached');
-            return false;
-        }
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
@@ -195,7 +182,7 @@ async function defense(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}});
+                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}}, {$inc: {version: 1}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                     return true;
@@ -221,19 +208,10 @@ async function defense(username, quantity) {
             console.log(err);
         }
     }
-    finally {
-        await clearCache(username);
-    }
 }
 //damage upgrade
 async function damage(username, quantity) {
     try{
-        var cache  = await cacheUser(username);
-        if(cache) {
-            console.log(username + ' tried to upgrade damage but is already cached');
-            return false;
-        }
-
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
@@ -249,7 +227,7 @@ async function damage(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}});
+                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}}, {$inc: {version: 1}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
                     return true;
@@ -274,21 +252,11 @@ async function damage(username, quantity) {
             console.log(err);
         }
     }
-    finally {
-        await clearCache(username);
-    }
 
 }
-
 //contributor upgrade
 async function contribute(username, quantity) {
     try{
-        var cache  = await cacheUser(username);
-        if(cache) {
-            console.log(username + ' tried to upgrade contributor but is already cached');
-            return false;
-        }
-
         let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({username: username});
@@ -305,7 +273,7 @@ async function contribute(username, quantity) {
         let maxAttempts = 3;
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
-            let update = await collection.updateOne({username: username}, {$set: {favor: newFavor}});
+            let update = await collection.updateOne({username: username}, {$set: {favor: newFavor}}, {$inc: {version: 1}});
             if(update.acknowledged == true && update.modifiedCount == 1) {
                 webhook('Contributor', username + ' contributed ' + qty + ' favor', '#00ff00');
                 //update global favor 
@@ -327,9 +295,6 @@ async function contribute(username, quantity) {
         else {
             console.log(err);
         }
-    }
-    finally {
-        await clearCache(username);
     }
 
 }
@@ -510,68 +475,6 @@ async function checkTransactions() {
         setTimeout(checkTransactions, 1000);
     }
 }
-
-//creatre function to cache a user
-async function cacheUser(username) {
-    try{
-        var db = client.db(dbName);
-        const cache = await db.collection('cached').find({username: username}).limit(1).next();
-        if (cache) {
-            if ((Date.now() - cache.timestamp) > 10000) {
-                return false;    
-            }
-            else {
-                console.log("User: " + username + " in Cache for " + ((Date.now() - cache.timestamp) / 1000).toString() + " seconds");
-                return true;
-            }
-        } 
-        //add username to cache
-        await db.collection('cached').updateOne({username: username}, {$set: {username: username, timestamp: Date.now()}}, {upsert: true})
-        return false;
-    }
-    catch (err) {
-        if(err instanceof MongoTopologyClosedError) {
-            console.log('MongoDB connection closed');
-            client.close();
-            process.exit(1);
-        }
-        else {
-            console.log(err);
-            return false;
-        }
-    }
-}
-
-//create a function to clear user from cache
-async function clearCache(username) {
-    try{
-        var db = client.db(dbName);
-        let maxAttempts = 3;
-        let delay = 200;
-        for (let i = 0; i < maxAttempts; i++) {
-            let update = await db.collection('cached').deleteOne({username: username})
-            if(update.acknowledged == true && update.deletedCount == 1) {
-                return;
-            }
-            await new Promise(resolve => setTimeout(resolve, delay));
-            delay *= 2.5; // exponential backoff  
-        }
-        //if it fails to clear cache after 10 attempts
-        console.log('Failed to clear cache for ' + username);
-        return;
-    }
-    catch (err) {
-        if(err instanceof MongoTopologyClosedError) {
-            console.log('MongoDB connection closed');
-            client.close();
-            process.exit(1);
-        }
-        else {
-            console.log(err);
-        }
-    }
-}
-
 
 
 var lastevent = Date.now();
