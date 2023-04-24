@@ -363,7 +363,16 @@ async function buy_crate(owner, quantity){
         crate.name = rarity.charAt(0).toUpperCase() + rarity.slice(1) + ' Loot Crate';
         crate.rarity = rarity;
         crate.owner = owner;
-        crate.item_number = await collection.countDocuments() + 1;
+        //finc count in supply:total
+        let count = await db.collection('crate-count').findOne({supply: 'total'});
+        //if count is null, set count to 0
+        if (!count) {
+            count = new Object();
+            count.supply = 'total';
+            count.count = 0;
+        }
+
+        crate.item_number = count.count + 1;
         crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
         crate.equiped = false;
         //add market object to crate
@@ -383,6 +392,8 @@ async function buy_crate(owner, quantity){
         console.log('Create Purchaed: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
         //send webhook to discord green
         marketWebhook('Crate Purchased', crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number, '#00ff00');
+        //inc crate count in crate-count db
+        await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
         return true;
     }
     catch(err){
