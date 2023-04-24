@@ -371,6 +371,8 @@ async function buy_crate(owner, quantity){
             count.supply = 'total';
             count.count = 0;
         }
+        //insert
+        await db.collection('crate-count').updateOne({supply: 'total'}, {$set: {count: count.count}});
 
         crate.item_number = count.count + 1;
         crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
