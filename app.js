@@ -124,7 +124,7 @@ async function storeRejectedHash(hash, username) {
         let db = client.db(dbName);
         let collection = db.collection('rejectedHashes');
         await collection.insertOne({hash: hash, username: username, time: Date.now()});
-        console.log('Hash ' + hash + ' stored');
+        console.log('Rejected Hash ' + hash + ' stored');
     }
     catch (err) {
         if(err instanceof MongoTopologyClosedError) {
@@ -371,7 +371,7 @@ async function buy_crate(owner, quantity){
             await db.collection('crate-count').insertOne({supply: 'total', count: 1});
             count.count = 1;
         }
-        
+    
         crate.item_number = count.count + 1;
         crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
         crate.equiped = false;
@@ -556,6 +556,8 @@ async function listen() {
                                     return;
                                 }
                                 else if (memo.event == 'tm_buy_crate'){
+                                    console.log('"Buy Crate" event detected');
+                                    console.log(res['transactions'][i]);
                                     sendTransaction(from, quantity, 'buy_crate', hashStore);
                                     return;
                                 }
