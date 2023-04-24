@@ -365,15 +365,13 @@ async function buy_crate(owner, quantity){
         crate.owner = owner;
         //finc count in supply:total
         let count = await db.collection('crate-count').findOne({supply: 'total'});
-        //if count is null, set count to 0
-        if (!count) {
-            count = new Object();
-            count.supply = 'total';
-            count.count = 0;
-        }
-        //insert
-        await db.collection('crate-count').updateOne({supply: 'total'}, {$set: {count: count.count}});
 
+        //check if count exists
+        if (count == null) {
+            await db.collection('crate-count').insertOne({supply: 'total', count: 1});
+            count.count = 1;
+        }
+        
         crate.item_number = count.count + 1;
         crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
         crate.equiped = false;
