@@ -437,7 +437,6 @@ async function sendTransactions() {
         let transactions = await collection.find({}).toArray();
         for (let i = 0; i < transactions.length; i++) {
             lastCheck = Date.now();
-            lastevent = Date.now();
             let transaction = transactions[i];
             if(transaction.type == 'engineering') {
                 var result = await engineering(transaction.username, transaction.quantity);
@@ -617,8 +616,8 @@ async function listen() {
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     //console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 60000) {
-        console.log('No events received in 60 seconds, shutting down so pm2 can restart');
+    if (Date.now() - lastevent > 20000) {
+        console.log('No events received in 20 seconds, shutting down so pm2 can restart');
         client.close();
         process.exit(1);
     }
