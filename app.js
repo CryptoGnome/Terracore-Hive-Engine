@@ -7,6 +7,7 @@ require('dotenv').config();
 
 //connect to Webhook
 const hook = new Webhook(process.env.DISCORD_WEBHOOK);
+const market_hook = new Webhook(process.env.MARKET_WEBHOOK);
 
 const dbName = 'terracore';
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 7000 });
@@ -80,6 +81,21 @@ async function webhook(title, message, color) {
         .setTimestamp();
     try {
         hook.send(embed).then(() => console.log('Sent webhook successfully!'))
+        .catch(err => console.log(err.message));
+    }
+    catch (err) {
+        console.log(chalk.red("Discord Webhook Error"));
+    }   
+}
+
+async function marketWebhook(title, message, color) {
+    const embed = new MessageBuilder()
+        .setTitle(title)
+        .addField('Message: ', message, true)
+        .setColor(color)
+        .setTimestamp();
+    try {
+        market_hook.send(embed).then(() => console.log('Sent webhook successfully!'))
         .catch(err => console.log(err.message));
     }
     catch (err) {
@@ -365,8 +381,8 @@ async function buy_crate(owner, quantity){
         //add crate to database
         await collection.insertOne(crate);
         console.log('Create Purchaed: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
-        //send webhook to discord
-        webhook('New Crate Purchase', 'New crate purchased by ' + owner + ' with rarity: ' + crate.rarity, ' for ' + quantity + ' SCRAP', '#86fc86');
+        //send webhook to discord green
+        marketWebhook('Crate Purchased', crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number, '#00ff00');
         return true;
     }
     catch(err){
