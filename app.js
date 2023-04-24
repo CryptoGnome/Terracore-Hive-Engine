@@ -533,7 +533,7 @@ async function listen() {
                                 var hashStore = payload.memo;
 
                                 if (res['transactions'][i].logs.includes('errors')) {
-                                    storeRejectedHash(hashStore, from);
+                                    //storeRejectedHash(hashStore, from);
                                     return;
                                 }
 
