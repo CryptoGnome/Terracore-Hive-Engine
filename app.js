@@ -388,6 +388,8 @@ async function buy_crate(owner, quantity){
         marketWebhook('Crate Purchased', crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number, '#00ff00');
         //inc crate count in crate-count db
         await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
+        //add to nft-drops log
+        await db.collection('nft-drops').insertOne({name: crate.name, rarity: crate.rarity, owner: crate.owner, item_number: crate.item_number, purchased: true, time: new Date()});
         return true;
     }
     catch(err){
@@ -527,7 +529,7 @@ async function listen() {
                                 var hashStore = payload.memo;
 
                                 if (res['transactions'][i].logs.includes('errors')) {
-                                    //storeRejectedHash(hashStore, from);
+                                    storeRejectedHash(hashStore, from);
                                     return;
                                 }
 
