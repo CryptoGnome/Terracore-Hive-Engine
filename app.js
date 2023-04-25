@@ -365,13 +365,7 @@ async function buy_crate(owner, quantity){
         crate.owner = owner;
         //finc count in supply:total
         let count = await db.collection('crate-count').findOne({supply: 'total'});
-
-        //check if count exists
-        if (count == null) {
-            await db.collection('crate-count').insertOne({supply: 'total', count: 1});
-            count.count = 1;
-        }
-    
+        
         crate.item_number = count.count + 1;
         crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
         crate.equiped = false;
@@ -556,7 +550,6 @@ async function listen() {
                                 }
                                 else if (memo.event == 'tm_buy_crate'){
                                     console.log('"Buy Crate" event detected');
-                                    console.log(res['transactions'][i]);
                                     sendTransaction(from, quantity, 'buy_crate', hashStore);
                                     return;
                                 }
@@ -615,9 +608,9 @@ async function listen() {
 
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
-    //console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 20000) {
-        console.log('No events received in 20 seconds, shutting down so pm2 can restart');
+    console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
+    if (Date.now() - lastevent > 10000) {
+        console.log('No events received in 10 seconds, shutting down so pm2 can restart');
         client.close();
         process.exit(1);
     }
@@ -628,11 +621,11 @@ setInterval(function() {
     heartbeat++;
     if (heartbeat == 5) {
         //log how man seconds since last lastCheck
-        console.log('HeartBeat: ' + (Date.now() - lastCheck) + 'ms ago');
+        //console.log('HeartBeat: ' + (Date.now() - lastCheck) + 'ms ago');
         heartbeat = 0;
     }
-    if (Date.now() - lastCheck > 90000) {
-        console.log('Error : No events received in 90 seconds, shutting down so PM2 can restart & try to reconnect to Resolve...');
+    if (Date.now() - lastCheck > 20000) {
+        console.log('Error : No events received in 20 seconds, shutting down so PM2 can restart & try to reconnect to Resolve...');
         client.close();
         process.exit();
     }
