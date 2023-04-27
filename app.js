@@ -14,7 +14,7 @@ var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, use
 
 
 //find node to use
-const nodes = ["https://engine.rishipanthee.com", "https://herpc.dtools.dev", "https://api.primersion.com", "https://herpc.kanibot.com", "https://ctpmain.com", "https://he.sourov.dev", "https://he.atexoras.com:2083", "https://herpc.actifit.io", "https://ha.herpc.dtools.dev"];
+const nodes = ["https://engine.deathwing.me/", "https://engine.rishipanthee.com", "https://herpc.dtools.dev", "https://api.primersion.com", "https://herpc.kanibot.com", "https://ctpmain.com", "https://he.sourov.dev", "https://he.atexoras.com:2083", "https://herpc.actifit.io", "https://ha.herpc.dtools.dev"];
 var node;
 
 async function findNode() {
@@ -102,11 +102,11 @@ async function marketWebhook(title, message, color) {
         console.log(chalk.red("Discord Webhook Error"));
     }   
 }
-async function storeHash(hash, username) {
+async function storeHash(hash, username, amount) {
     try{
         let db = client.db(dbName);
         let collection = db.collection('hashes');
-        await collection.insertOne({hash: hash, username: username, time: Date.now()});
+        await collection.insertOne({hash: hash, username: username, amount: amount, time: Date.now()});
         console.log('Hash ' + hash + ' stored');
     }
     catch (err) {
@@ -437,35 +437,35 @@ async function sendTransactions() {
             if(transaction.type == 'engineering') {
                 var result = await engineering(transaction.username, transaction.quantity);
                 if (result) {
-                    await storeHash(transaction.hash, transaction.username);
+                    await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
             else if (transaction.type == 'contribute') {
                 var result2 = await contribute(transaction.username, transaction.quantity);
                 if (result2) {
-                    await storeHash(transaction.hash, transaction.username);
+                    await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
             else if (transaction.type == 'defense') {
                 var result3 = await defense(transaction.username, transaction.quantity);
                 if (result3) {
-                    await storeHash(transaction.hash, transaction.username);
+                    await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
             else if (transaction.type == 'damage') {
                 var result4 = await damage(transaction.username, transaction.quantity);
                 if (result4) {
-                    await storeHash(transaction.hash, transaction.username);
+                    await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
             else if (transaction.type == 'buy_crate') {
                 var result5 = await buy_crate(transaction.username, transaction.quantity);
                 if (result5) {
-                    await storeHash(transaction.hash, transaction.username);
+                    await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id});
                     
                 }
@@ -578,7 +578,7 @@ async function listen() {
                                     return;
                                 }
                                 webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
-                                storeHash(hashStore, sender);
+                                storeHash(hashStore, sender, qty);
                                 return;
                             }
 
