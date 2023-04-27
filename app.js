@@ -106,7 +106,7 @@ async function storeHash(hash, username, amount) {
     try{
         let db = client.db(dbName);
         let collection = db.collection('hashes');
-        await collection.insertOne({hash: hash, username: username, amount: amount, time: Date.now()});
+        await collection.insertOne({hash: hash, username: username, amount: parseFloat(amount), time: Date.now()});
         console.log('Hash ' + hash + ' stored');
     }
     catch (err) {
