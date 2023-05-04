@@ -8,7 +8,7 @@ require('dotenv').config();
 //connect to Webhook
 const hook = new Webhook(process.env.DISCORD_WEBHOOK);
 const market_hook = new Webhook(process.env.MARKET_WEBHOOK);
-
+const wif = process.env.ACTIVE_KEY;
 const dbName = 'terracore';
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 7000 });
 
@@ -334,7 +334,145 @@ async function globalFavorUpdate(qty){
 
 }
 
+////////////////////////////////////////////////////
+////////////
+/////////// Planet Functions
+//////////
+///////////////////////////////////////////////////
+async function mintCrate(owner){
+    try{
+        //load crate collection
+        let db = client.db(dbName); 
+        var collection = db.collection('crates');
 
+        //roll a random number 1 - 1000
+        var roll = Math.floor(Math.random() * 1000) + 1;
+        console.log('Item Roll: ' + roll);
+        let rarity;
+
+        if (roll <= 750) rarity = 'common'; // 75% chance
+        else if (roll <= 900) rarity = 'uncommon'; // 15% chance
+        else if (roll <= 975) rarity = 'rare'; // 7.5% chance
+        else if (roll <= 995) rarity = 'epic'; // 2% chance
+        else rarity = 'legendary'; // 0.5% chance
+
+
+        let count = await db.collection('crate-count').findOne({supply: 'total'});
+
+        //create crate object
+        let crate = new Object();
+        crate.name = rarity.charAt(0).toUpperCase() + rarity.slice(1) + ' Loot Crate';
+        crate.rarity = rarity;
+        crate.owner = owner;
+        crate.item_number = count.count + 1;
+        crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
+        crate.equiped = false;
+        //add market object to crate
+        let market = new Object();
+        market.listed = false;
+        market.price = 0;
+        market.seller = null;
+        market.created = 0;
+        market.expires = 0;
+        market.sold = 0;
+
+        //add market object to crate
+        crate.market = market;
+
+
+        //add crate to database
+        collection.insertOne(crate);
+        console.log('Minted crate: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
+        webhook3("Crate Dropped!", crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, '#f55a42');
+        await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
+
+        //log to nft-drops in mongoDB
+        await db.collection('nft-drops').insertOne({name: crate.name, rarity: crate.rarity, owner: crate.owner, item_number: crate.item_number, purchased: false, time: new Date()});
+        return crate;
+
+    }
+    catch(err){
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection is closed');
+            process.exit(1);
+        }
+        else{
+            console.log(err);
+        }
+    }
+}
+//create a fucntion to roll to see if user gets a crate
+async function bossFight(username, _planet) {
+    try{
+        
+        //load player collection
+        let db = client.db(dbName);
+        let collection = db.collection('players');
+        let user = await collection.findOne({ username: username });
+        var luck = 0;
+        //check if user exists
+        if (user == null) {
+            console.log('User: ' + username + ' does not exist');
+            return false;
+        }
+        else {
+            //get luck
+            luck = user.stats.luck;
+
+            //call planets collection to see if the user can access the planet and has the fuel
+            let planets = db.collection('planets');
+            let planet = await planets.findOne({ username: username });
+            //check the planets array to see if the user has access to the planet (it just needs to be in the array)
+            //loop through the planets array to see if the user has access to the planet
+            var found = false;
+            var index = 0;
+            for (var i = 0; i < planet.planets.length; i++) {
+                if (planet.planets[i].name == _planet) {
+                    found = true;
+                    index = i;
+                    break;
+                }
+            }
+            //if the user has access to the 
+            if (found == true) {
+                //roll a random number 1 - 100
+                var roll =  Math.floor(Math.random() * 100) + 1;
+                //if roll is greater than drop chance then return false
+                if (roll > luck) {
+                    console.log("------  BOSS MISSED: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
+                    //set new lastBattle for _planet in planets array
+                    await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
+                    await db.collection('boss-log').insertOne({username: username, planet: _planet, result: 'miss', roll: roll, luck: luck, time: Date.now()});
+                    return false;
+                }
+                else {
+                    console.log("------  ITEM FOUND: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
+                    //set new lastBattle for _planet in planets array
+                    await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
+                    await mintCrate(username);
+                    await db.collection('boss-log').insertOne({username: username, planet: _planet, result: 'hit', roll: roll, luck: luck, time: Date.now()});
+                    return true;
+                }
+
+            }
+            else {
+                console.log('User: ' + username + ' does not have access to planet: ' + _planet);
+                return false;
+            }
+
+
+        }
+    }
+    catch(err){
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection is closed');
+            process.exit(1);
+        }
+        else{
+            console.log(err);
+        }
+    }
+}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -555,7 +693,6 @@ async function listen() {
                                     sendTransaction(from, quantity, 'buy_crate', hashStore);
                                     return;
                                 }
-
                                 else{
                                     console.log('Unknown event');
                                     return;
@@ -563,6 +700,36 @@ async function listen() {
                                         
                             }
 
+                            else if (payload.to == 'null' && payload.symbol == 'FLUX') {
+                
+                                try{
+                                    var _memo = {
+                                        event: payload.memo.hash.split('-')[0],
+                                        planet: payload.memo.planet,
+        
+                                    }
+                                
+
+                                    //check if memo is terracore_boss_fight and if so call check planet
+                                    if (_memo.event == 'terracore_boss_fight') {
+                                        //check if planet is Oceana
+                                        if (_memo.planet == 'Oceana' && payload.quantity === '1') {
+                                            bossFight(res['transactions'][i]['sender'], _memo.planet);
+                                        }
+                                    }
+                                    //add future planets below
+                                }
+                                catch(err){
+                                    console.log(err);
+                                }
+
+                                    
+
+
+                            }
+
+                        
+                        
                         }
                         else if (res['transactions'][i]['contract'] == 'tokens' && res['transactions'][i]['action'] == 'stake') {
                             //convert payload to json
