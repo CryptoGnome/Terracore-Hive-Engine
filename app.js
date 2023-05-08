@@ -383,7 +383,7 @@ async function mintCrate(owner){
         //add crate to database
         collection.insertOne(crate);
         console.log('Minted crate: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
-        webhook3("Crate Dropped!", crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, '#f55a42');
+        marketWebhook('Crate Dropped!', crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, '#c640ff');
         await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
 
         //log to nft-drops in mongoDB
@@ -442,7 +442,7 @@ async function bossFight(username, _planet) {
                     console.log("------  BOSS MISSED: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
                     //set new lastBattle for _planet in planets array
                     await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
-                    await db.collection('boss-log').insertOne({username: username, planet: _planet, result: 'miss', roll: roll, luck: luck, time: Date.now()});
+                    await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, time: Date.now()});
                     return false;
                 }
                 else {
@@ -450,7 +450,7 @@ async function bossFight(username, _planet) {
                     //set new lastBattle for _planet in planets array
                     await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
                     await mintCrate(username);
-                    await db.collection('boss-log').insertOne({username: username, planet: _planet, result: 'hit', roll: roll, luck: luck, time: Date.now()});
+                    await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, time: Date.now()});
                     return true;
                 }
 
