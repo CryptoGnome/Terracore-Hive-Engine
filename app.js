@@ -102,6 +102,51 @@ async function marketWebhook(title, message, color) {
         console.log(chalk.red("Discord Webhook Error"));
     }   
 }
+async function bossWebhook(title, message, rarity) {
+    //check if stats are null
+    var embed;
+    var id;
+    //color select based on rarity
+    switch (rarity) {
+        case 'common':
+            color = '#bbc0c7';
+            id = 'common_crate';
+            break;
+        case 'uncommon':
+            color = '#538a62';
+            id = 'uncommon_crate';
+            break;
+        case 'rare':
+            color = '#2a2cbd';
+            id = 'rare_crate';
+            break;
+        case 'epic':
+            color = '#7c04cc';
+            id = 'epic_crate';
+            break;
+        case 'legendary':
+            color = '#d98b16';
+            id = 'legendary_crate';
+            break;
+    }
+
+    //set image
+    embed = new MessageBuilder()
+        .setTitle(title)
+        .addField('Message: ', message, true)
+        .setColor(color)
+        .setThumbnail(`https://terracore.herokuapp.com/images/${id}.png`)
+        .setTimestamp();
+    
+    try {
+        await market_hook.send(embed);
+        console.log('Sent webhook successfully!');
+    } catch (err) {
+        console.log(chalk.red("Discord Webhook Error: ", err.message));
+    }
+
+}
+
 async function storeHash(hash, username, amount) {
     try{
         let db = client.db(dbName);
@@ -339,22 +384,30 @@ async function globalFavorUpdate(qty){
 /////////// Planet Functions
 //////////
 ///////////////////////////////////////////////////
-async function mintCrate(owner){
+async function mintCrate(owner, _planet){
     try{
         //load crate collection
         let db = client.db(dbName); 
         var collection = db.collection('crates');
 
         //roll a random number 1 - 1000
-        var roll = Math.floor(Math.random() * 1000) + 1;
+        var roll = Math.floor(Math.random() * 1001)
         console.log('Item Roll: ' + roll);
         let rarity;
 
-        if (roll <= 750) rarity = 'common'; // 75% chance
-        else if (roll <= 900) rarity = 'uncommon'; // 15% chance
-        else if (roll <= 975) rarity = 'rare'; // 7.5% chance
-        else if (roll <= 995) rarity = 'epic'; // 2% chance
-        else rarity = 'legendary'; // 0.5% chance
+        if (_planet == 'Oceana') {
+            if (roll <= 950) { rarity = 'uncommon'; } // 95 %
+            else if (roll > 950 && roll <= 985) { rarity = 'rare'; } // 3.5 % 
+            else if (roll > 985 && roll <= 995) { rarity = 'epic'; } // 1 %
+            else if (roll > 995 && roll <= 1000) { rarity = 'legendary'; } // .5 %
+        }
+        if (_planet == 'Celestia') {
+            if (roll <= 900) { rarity = 'uncommon'; } // 90 %
+            else if (roll > 900 && roll <= 970) { rarity = 'rare'; } // 7 %
+            else if (roll > 970 && roll <= 992.5) { rarity = 'epic'; } // 2.25 %
+            else if (roll > 992.5 && roll <= 1000) { rarity = 'legendary'; } // .75 %
+        }
+        
 
 
         let count = await db.collection('crate-count').findOne({supply: 'total'});
@@ -383,7 +436,7 @@ async function mintCrate(owner){
         //add crate to database
         collection.insertOne(crate);
         console.log('Minted crate: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
-        marketWebhook('Crate Dropped!', crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, '#c640ff');
+        bossWebhook('Crate Dropped!', crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, crate.rarity);
         await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
 
         //log to nft-drops in mongoDB
@@ -435,23 +488,32 @@ async function bossFight(username, _planet) {
             }
             //if the user has access to the 
             if (found == true) {
-                //roll a random number 1 - 100
-                var roll =  Math.floor(Math.random() * 100) + 1;
-                //if roll is greater than drop chance then return false
-                if (roll > luck) {
-                    console.log("------  BOSS MISSED: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
-                    //set new lastBattle for _planet in planets array
-                    await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
-                    await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, time: Date.now()});
+
+                //check if the last battle was more than 4 hours ago
+                if (Date.now() - planet.planets[index].lastBattle < 14400000) {
+                    console.log('User: ' + username + ' has already battled the boss in the last 4 hours');
                     return false;
                 }
-                else {
-                    console.log("------  ITEM FOUND: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
-                    //set new lastBattle for _planet in planets array
-                    await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
-                    await mintCrate(username);
-                    await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, time: Date.now()});
-                    return true;
+                else{
+                
+                    //roll a random number 1 - 100
+                    var roll =  Math.floor(Math.random() * 101);
+                    //if roll is greater than drop chance then return false
+                    if (roll > luck) {
+                        console.log("------  BOSS MISSED: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
+                        //set new lastBattle for _planet in planets array
+                        await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
+                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, time: Date.now()});
+                        return false;
+                    }
+                    else {
+                        console.log("------  ITEM FOUND: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
+                        //set new lastBattle for _planet in planets array
+                        await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
+                        await mintCrate(username, _planet);
+                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, time: Date.now()});
+                        return true;
+                    }
                 }
 
             }
