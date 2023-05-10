@@ -496,8 +496,9 @@ async function bossFight(username, _planet) {
                 }
                 else{
                 
-                    //roll a random number 1 - 100
-                    var roll =  Math.floor(Math.random() * 101);
+                    //roll a random number 0 -100 as a float
+                    var roll = Math.random() * 100;
+
                     //if roll is greater than drop chance then return false
                     if (roll > luck) {
                         console.log("------  BOSS MISSED: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
