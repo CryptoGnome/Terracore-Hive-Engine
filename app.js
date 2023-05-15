@@ -146,7 +146,6 @@ async function bossWebhook(title, message, rarity) {
     }
 
 }
-
 async function storeHash(hash, username, amount) {
     try{
         let db = client.db(dbName);
@@ -533,6 +532,7 @@ async function bossFight(username, _planet) {
         }
         else{
             console.log(err);
+            return false;
         }
     }
 }
@@ -777,10 +777,18 @@ async function listen() {
                                     if (_memo.event == 'terracore_boss_fight') {
                                         //check if planet is Oceana
                                         if (_memo.planet == 'Oceana' && payload.quantity === '1') {
-                                            bossFight(res['transactions'][i]['sender'], _memo.planet);
+                                            //let finish then store hash
+                                            bossFight(res['transactions'][i]['sender'], _memo.planet, payload.memo.hash.split('-')[1]).then(function(result){
+                                                storeHash(payload.memo.hash, res['transactions'][i]['sender'], payload.quantity);
+                                            });
                                         }
+                                        else if (_memo.planet == 'Celestia' && payload.quantity === '1') {
+                                            //let finish then store hash
+                                 
+                                        }
+                                
                                     }
-                                    //add future planets below
+                                  
                                 }
                                 catch(err){
                                     console.log(err);
