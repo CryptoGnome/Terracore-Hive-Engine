@@ -771,15 +771,18 @@ async function listen() {
                                         planet: payload.memo.planet,
         
                                     }
-                                
-
+                            
                                     //check if memo is terracore_boss_fight and if so call check planet
                                     if (_memo.event == 'terracore_boss_fight') {
                                         //check if planet is Oceana
                                         if (_memo.planet == 'Oceana' && payload.quantity === '1') {
                                             //let finish then store hash
-                                            bossFight(res['transactions'][i]['sender'], _memo.planet, payload.memo.hash.split('-')[1]).then(function(result){
-                                                storeHash(payload.memo.hash, res['transactions'][i]['sender'], payload.quantity);
+                                            let sender = res['transactions'][i]['sender'];
+                                            let hash = payload.memo.hash;
+                                            let qty = payload.quantity;
+                                            let planet = _memo.planet;
+                                            bossFight(sender, planet, hash.split('-')[1]).then(function(result){
+                                                storeHash(hash, sender, qty);
                                             });
                                         }
                                         else if (_memo.planet == 'Celestia' && payload.quantity === '1') {
