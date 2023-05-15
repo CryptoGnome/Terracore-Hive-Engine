@@ -8,6 +8,7 @@ require('dotenv').config();
 //connect to Webhook
 const hook = new Webhook(process.env.DISCORD_WEBHOOK);
 const market_hook = new Webhook(process.env.MARKET_WEBHOOK);
+const boss_hook = new Webhook(process.env.BOSS_WEBHOOK);
 const wif = process.env.ACTIVE_KEY;
 const dbName = 'terracore';
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 7000 });
@@ -139,7 +140,7 @@ async function bossWebhook(title, message, rarity) {
         .setTimestamp();
     
     try {
-        await market_hook.send(embed);
+        await boss_hook.send(embed);
         console.log('Sent webhook successfully!');
     } catch (err) {
         console.log(chalk.red("Discord Webhook Error: ", err.message));
