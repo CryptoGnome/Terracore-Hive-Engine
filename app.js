@@ -735,6 +735,7 @@ async function listen() {
 
                                 if (res['transactions'][i].logs.includes('errors')) {
                                     storeRejectedHash(hashStore, from);
+                                    return;
                                 }
 
                                 //check if memo is engineering
