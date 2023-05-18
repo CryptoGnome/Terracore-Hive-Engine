@@ -21,6 +21,7 @@ var node;
 async function findNode() {
     //look in mongo for last node used
     var currentNode;
+    /*
     try {
         let db = client.db(dbName);
         let collection = db.collection('he-node');
@@ -47,9 +48,11 @@ async function findNode() {
         else {
             console.log(err);
         }
-    }
     console.log('Current node: ' + currentNode);
     node = nodes[currentNode];
+    */
+
+    node = nodes[0];
     while (true) {
         try{
             const response = await fetch(node);
@@ -853,8 +856,8 @@ async function listen() {
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
     console.log('Last event: ' + (Date.now() - lastevent) + ' ms ago');
-    if (Date.now() - lastevent > 10000) {
-        console.log('No events received in 10 seconds, shutting down so pm2 can restart');
+    if (Date.now() - lastevent > 20000) {
+        console.log('No events received in 20 seconds, shutting down so pm2 can restart');
         client.close();
         process.exit(1);
     }
