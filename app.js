@@ -735,34 +735,27 @@ async function listen() {
 
                                 if (res['transactions'][i].logs.includes('errors')) {
                                     storeRejectedHash(hashStore, from);
-                                    return;
                                 }
 
                                 //check if memo is engineering
                                 if (memo.event == 'terracore_engineering'){
                                     sendTransaction(from, quantity, 'engineering', hashStore);
-                                    return;
                                 }
                                 else if (memo.event == 'terracore_damage'){
                                     sendTransaction(from, quantity, 'damage', hashStore);
-                                    return;
                                 }
                                 else if (memo.event == 'terracore_defense'){
                                     sendTransaction(from, quantity, 'defense', hashStore);
-                                    return;
                                 }
                                 else if (memo.event == 'terracore_contribute'){
                                     sendTransaction(from, quantity, 'contribute', hashStore);
-                                    return;
                                 }
                                 else if (memo.event == 'tm_buy_crate'){
                                     console.log('"Buy Crate" event detected');
                                     sendTransaction(from, quantity, 'buy_crate', hashStore);
-                                    return;
                                 }
                                 else{
                                     console.log('Unknown event');
-                                    return;
                                 }
                                         
                             }
@@ -820,11 +813,9 @@ async function listen() {
                                 var hashStore = payload.memo;
                                 if (res['transactions'][i].logs.includes('errors')) {
                                     storeRejectedHash(hashStore, sender);
-                                    return;
                                 }
                                 webhook('New Stake', sender + ' has staked ' + qty + ' ' + "SCRAP", '#FFA500');
                                 storeHash(hashStore, sender, qty);
-                                return;
                             }
 
 
