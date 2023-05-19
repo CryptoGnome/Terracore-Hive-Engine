@@ -772,6 +772,11 @@ async function listen() {
                             
                                     //check if memo is terracore_boss_fight and if so call check planet
                                     if (_memo.event == 'terracore_boss_fight') {
+                                        //check if transaction failed
+                                        if (res['transactions'][i].logs.includes('errors')) {
+                                            storeRejectedHash(hashStore, from);
+                                            return;
+                                        }
                                         //check if planet is Oceana
                                         if (_memo.planet == 'Oceana' && payload.quantity === '1') {
                                             //let finish then store hash
