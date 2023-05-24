@@ -15,7 +15,7 @@ var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, use
 
 
 //find node to use
-const nodes = ["https://engine.deathwing.me/", "https://engine.rishipanthee.com", "https://herpc.dtools.dev", "https://api.primersion.com", "https://herpc.kanibot.com", "https://ctpmain.com", "https://he.sourov.dev", "https://he.atexoras.com:2083", "https://herpc.actifit.io", "https://ha.herpc.dtools.dev"];
+const nodes = ["https://enginerpc.com", "https://herpc.dtools.dev", "https://ctpmain.com", "https://he.atexoras.com:2083","https://herpc.liotes.com", "https://herpc.tribaldex.com", "https://engine.hive.pizza", "https://api.primersion.com", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
 var node;
 
 async function findNode() {
@@ -410,9 +410,13 @@ async function mintCrate(owner, _planet){
             else if (roll > 970 && roll <= 992.5) { rarity = 'epic'; } // 2.25 %
             else if (roll > 992.5 && roll <= 1000) { rarity = 'legendary'; } // .75 %
         }
+        if (_planet == 'Arborealis') {
+            if (roll <= 880) { rarity = 'uncommon'; } // 85 %
+            else if (roll > 880 && roll <= 960) { rarity = 'rare'; } // 8 %
+            else if (roll > 960 && roll <= 992) { rarity = 'epic'; } // 3 %
+            else if (roll > 992 && roll <= 1000) { rarity = 'legendary'; } // 1 %
+        }
         
-
-
         let count = await db.collection('crate-count').findOne({supply: 'total'});
 
         //create crate object
@@ -540,13 +544,263 @@ async function bossFight(username, _planet) {
         }
     }
 }
+////////////////////////////////////////////////////
+////////////
+/////////// QUEST FUNCTIONS
+//////////
+///////////////////////////////////////////////////
+//start quest 
+async function startQuest(username) {
+    //check if user has a quest already
+    //if so return false else insert quest into active-quests collection
+    try{
+        //check if user is in active-quests collection
+        let db = client.db(dbName);
+        let collection = db.collection('active-quests');
+        let user = await collection.findOne({ username: username });
+        //get username from players collection
+        let _username = await db.collection('players').findOne({ username: username });
+   
+        if(_username) {
+            var activeQuest;
+            if (!user) {
+                //select a quest
+                activeQuest = await selectQuest(1, _username);
+                //add quest to active-quests collection
+                await collection.insertOne(activeQuest);
+            }
+            else {
+                console.log('User ' + username + ' already has a quest');
+                return false;
+            }
+          
+        }
+        else {
+            console.log('User ' + username + ' does not exist');
+            return false;
+        }
+
+    
+
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            client.close();
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+            return false;
+        }
+    }
+}
+//create a function the selects quests 
+//the functions for start & end will be in the HE contract
+async function selectQuest(round, user) {
+    //go into quest-template collection and select a random quest then add it to users current quest
+    try{
+        let db = client.db(dbName);
+        let collection = db.collection('quest-template');
+        let quests = await collection.find({}).toArray();
+
+        //select a random quest
+        var random_quest = quests[Math.floor(Math.random() * quests.length)];
+
+        //choose a random attribute based on round
+        var availableAttributes = ["damage", "defense", "engineering", "dodge", "crit", "luck"];
+        var attribute_one = availableAttributes[Math.floor(Math.random() * availableAttributes.length)];
+        availableAttributes = availableAttributes.filter(item => item !== attribute_one);
+        var attribute_two = availableAttributes[Math.floor(Math.random() * availableAttributes.length)];
+
+        //come up with base stats for the quest these should scale based on the round
+        var base_stats = {
+            "damage": 20 * round,
+            "defense": 20 * round,
+            "engineering": 2 * round,
+            "dodge": round,
+            "crit": round,
+            "luck": round
+        };
+
+        //base success chance
+        var success_chance = 1;
+
+        //for every round remove 10% chance of success
+        for (let i = 0; i < round; i++) {
+            success_chance -= 0.05;
+        }
+
+        //loop users stats and find attribute_one and attribute_two
+
+        //go through each stat and add to success chance
+        for(var key in user.stats) {
+            if(key == attribute_one || key == attribute_two) {
+                //check of stat is greater than base stat
+                if(user.stats[key] > base_stats[key]) {
+                    //add to success chance
+                    success_chance += 0.1;
+                }
+            }
+        }
 
 
-//////////////////////////////////////////////////////////////////////////////
-////NFT FUNCTIONS/////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-//THESE ARE TEST FUNCTIONS FOR THE NFT MARKETPLACE IF YOU SEND SCRAP BEFORE LAUNCH YOU WILL LOOSE THE NFTS THAT POPULATE
+        
+        //if round is greater than 1 roll for rewards, rewards should scale based on round
+        if (round > 0) {
+            //roll float for rewards between 0 and 1
+            var roll = Math.random();
 
+            //based on on the round increase the chance of getting better rewards
+            var scrap_reward = (roll * 10) * (round * 1.25)
+
+            //make second roll for relics
+            roll = Math.random();
+
+
+            var common_relics = 0;
+            var uncommon_relics = 0;
+            var rare_relics = 0;
+            var epic_relics = 0;
+            var legendary_relics = 0;
+
+            //roll to decide how many types of relics to give
+            roll = Math.random();
+
+            var relic_types = 1;
+            if (round > 5) {
+                if (roll < 0.5) {
+                    relic_types = 2;
+                }
+            }
+            if (round > 10) {
+                if (roll < 0.75) {
+                    relic_types = 2;
+                }
+                else if (roll < 0.5) {
+                    relic_types = 3;
+                }
+
+            }
+            if (round > 14) {
+                if (roll < 0.95) {
+                    relic_types = 2;
+                }
+                else if (roll < 0.75) {
+                    relic_types = 3;
+                }
+                else if (roll < 0.25) {
+                    relic_types = 4;
+                }
+            }
+            if (round > 18) {
+                if (roll < 0.98) {
+                    relic_types = 2
+                }
+                else if (roll < 0.75) {
+                    relic_types = 3;
+                }
+                else if (roll < 0.50) {
+                    relic_types = 4;
+                }
+                else if (roll < 0.2) {
+                    relic_types = 5;
+                }
+            }
+
+            //loop through shard_types and give relics
+            for (let i = 0; i < relic_types; i++) {
+                //make  roll for relics
+                roll = Math.random();
+                //decide which relics to give
+                if (roll > 0.5) {
+                    roll = Math.random();
+                    common_relics = (roll * 10) * round/4;
+                }
+                else if (roll > 0.4) {
+                    roll = Math.random();
+                    uncommon_relics = (roll * 10) * round/4;
+
+                }
+                else if (roll > 0.25) {
+                    roll = Math.random();
+                    rare_relics = (roll * 10) * round/4;
+                }
+                else if (roll > 0.10) {
+                    roll = Math.random();
+                    epic_relics = (roll * 10) * round/6;
+                    
+                }
+                else if (roll > 0.05) {
+                    roll = Math.random();
+                    legendary_relics = (roll * 10) * round/8;
+                }
+            }
+
+        }
+        else {
+            //round is 1 so no rewards
+            var scrap_reward = 0;
+            var common_relics = 0;
+            var uncommon_relics = 0;
+            var rare_relics = 0;
+            var epic_relics = 0;
+            var legendary_relics = 0;
+        }
+
+        //log scraps, and shards to console
+        console.log('------------------------------------------------------');
+        console.log('Round: ' + round.toString() + ' Success Chance: ' + success_chance.toString() + ' for user: ' + user.username);
+        console.log('Scrap Reward: ' + scrap_reward.toString());
+        console.log('Common Relics: ' + common_relics.toString());
+        console.log('Uncommon Relics: ' + uncommon_relics.toString());
+        console.log('Rare Relics: ' + rare_relics.toString());
+        console.log('Epic Relics: ' + epic_relics.toString());
+        console.log('Legendary Relics: ' + legendary_relics.toString());
+        //create new quest object
+        var quest = {
+            "username": user.username,
+            "name": random_quest.name,
+            "description": random_quest.description,
+            "image": random_quest.image,
+            "round": round,
+            "success_chance": success_chance,
+            "attribute_one": attribute_one,
+            "attribute_two": attribute_two,
+            "attribut_one_value": base_stats[attribute_one],
+            "attribute_two_value": base_stats[attribute_two],
+            "scrap": scrap_reward,
+            "common_shards": common_relics,
+            "uncommon_shards": uncommon_relics,
+            "rare_shards": rare_relics,
+            "epic_shards": epic_relics,
+            "legendary_shards": legendary_relics,
+        };
+  
+        //return quest
+        return quest;
+
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            client.close();
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+            return false;
+        }
+    }
+
+    
+}
+
+////////////////////////////////////////////////////
+////////////
+/////////// NFT FUNCTIONS
+//////////
+///////////////////////////////////////////////////
 async function buy_crate(owner, quantity){
     try{
         //load crate collection
@@ -704,6 +958,7 @@ async function checkTransactions() {
 }
 
 
+
 var lastevent = Date.now();
 var lastCheck = Date.now();
 //aysncfunction to start listening for events
@@ -764,37 +1019,50 @@ async function listen() {
                             else if (payload.to == 'null' && payload.symbol == 'FLUX') {
                 
                                 try{
-                                    var _memo = {
-                                        event: payload.memo.hash.split('-')[0],
-                                        planet: payload.memo.planet,
-        
-                                    }
-                            
+                 
                                     //check if memo is terracore_boss_fight and if so call check planet
-                                    if (_memo.event == 'terracore_boss_fight') {
+                                    if (payload.memo.hash.split('-')[0] == 'terracore_boss_fight') {
                                         //check if transaction failed
                                         if (res['transactions'][i].logs.includes('errors')) {
                                             storeRejectedHash(hashStore, from);
                                             return;
                                         }
-                                        //check if planet is Oceana
-                                        if (_memo.planet == 'Oceana' && payload.quantity === '1') {
-                                            //let finish then store hash
+  
+                                        if (payload.memo.planet == 'Oceana' && payload.quantity === '1') {
                                             let sender = res['transactions'][i]['sender'];
                                             let hash = payload.memo.hash;
                                             let qty = payload.quantity;
-                                            let planet = _memo.planet;
+                                            let planet = payload.memo.planet;
                                             bossFight(sender, planet, hash.split('-')[1]).then(function(result){
                                                 storeHash(hash, sender, qty);
                                             });
                                         }
-                                        else if (_memo.planet == 'Celestia' && payload.quantity === '1') {
-                                            //let finish then store hash
+                                        else if (payload.memo.planet == 'Celestia' && payload.quantity === '2') {
+                                            let sender = res['transactions'][i]['sender'];
+                                            let hash = payload.memo.hash;
+                                            let qty = payload.quantity;
+                                            let planet = payload.memo.planet;
+                                            bossFight(sender, planet, hash.split('-')[1]).then(function(result){
+                                                storeHash(hash, sender, qty);
+                                            });
                                  
                                         }
                                 
                                     }
-                                  
+                                    else if (payload.memo.hash.split('-')[0] == 'terracore_quest_start'){
+                                        if (res['transactions'][i].logs.includes('errors')) {
+                                            storeRejectedHash(hashStore, from);
+                                            return;
+                                        }
+
+                                        if(payload.quantity === '1'){
+                                            //startQuest(res['transactions'][i]['sender']);
+                                            console.log('Quest Start Event Detected');
+                                        }
+                                        else{
+                                            console.log('Not Enough Flux was Sent to Start Quest');
+                                        }
+                                    }
                                 }
                                 catch(err){
                                     console.log(err);
