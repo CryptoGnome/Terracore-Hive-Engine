@@ -15,7 +15,7 @@ var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, use
 
 
 //find node to use
-const nodes = ["https://enginerpc.com", "https://herpc.dtools.dev", "https://ctpmain.com", "https://he.atexoras.com:2083","https://herpc.liotes.com", "https://herpc.tribaldex.com", "https://engine.hive.pizza", "https://api.primersion.com", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
+const nodes = ["https://engine.deathwing.me", "https://enginerpc.com", "https://herpc.dtools.dev", "https://ctpmain.com", "https://he.atexoras.com:2083","https://herpc.liotes.com", "https://herpc.tribaldex.com", "https://engine.hive.pizza", "https://api.primersion.com", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
 var node;
 
 async function findNode() {
@@ -106,7 +106,7 @@ async function marketWebhook(title, message, color) {
         console.log(chalk.red("Discord Webhook Error"));
     }   
 }
-async function bossWebhook(title, message, rarity) {
+async function bossWebhook(title, message, rarity, planet) {
     //check if stats are null
     var embed;
     var id;
@@ -138,6 +138,7 @@ async function bossWebhook(title, message, rarity) {
     embed = new MessageBuilder()
         .setTitle(title)
         .addField('Message: ', message, true)
+        .addField('Planet: ', planet, true)
         .setColor(color)
         .setThumbnail(`https://terracore.herokuapp.com/images/${id}.png`)
         .setTimestamp();
