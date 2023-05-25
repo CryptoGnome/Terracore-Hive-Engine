@@ -444,7 +444,7 @@ async function mintCrate(owner, _planet){
         //add crate to database
         collection.insertOne(crate);
         console.log('Minted crate: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
-        bossWebhook('Crate Dropped!', crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, crate.rarity);
+        bossWebhook('Crate Dropped!', crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, crate.rarity, _planet);
         await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
 
         //log to nft-drops in mongoDB
