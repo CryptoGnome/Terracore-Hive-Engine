@@ -1056,8 +1056,8 @@ async function listen() {
                                             return;
                                         }
 
-                                        if(payload.quantity === '1'){
-                                            //startQuest(res['transactions'][i]['sender']);
+                                        if(payload.quantity === '0.01' && res['transactions'][i]['sender'] == 'asgarth-dev'){
+                                            startQuest(res['transactions'][i]['sender']);
                                             console.log('Quest Start Event Detected');
                                         }
                                         else{
