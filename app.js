@@ -550,6 +550,9 @@ async function bossFight(username, _planet) {
 /////////// QUEST FUNCTIONS
 //////////
 ///////////////////////////////////////////////////
+async function rollDice(index) {
+    return Math.random() * (index - 0.01 * index) + 0.01 * index;
+}
 //start quest 
 async function startQuest(username) {
     //check if user has a quest already
@@ -624,6 +627,7 @@ async function selectQuest(round, user) {
             "luck": round
         };
 
+
         //base success chance
         var success_chance = 1;
 
@@ -650,23 +654,13 @@ async function selectQuest(round, user) {
         //if round is greater than 1 roll for rewards, rewards should scale based on round
         if (round > 0) {
             //roll float for rewards between 0 and 1
-            var roll = Math.random();
-
-            //based on on the round increase the chance of getting better rewards
-            var scrap_reward = (roll * 10) * (round * 1.25)
-
-            //make second roll for relics
-            roll = Math.random();
-
+            var roll = await rollDice(1);
 
             var common_relics = 0;
             var uncommon_relics = 0;
             var rare_relics = 0;
             var epic_relics = 0;
             var legendary_relics = 0;
-
-            //roll to decide how many types of relics to give
-            roll = Math.random();
 
             var relic_types = 1;
             if (round > 5) {
@@ -712,36 +706,34 @@ async function selectQuest(round, user) {
             //loop through shard_types and give relics
             for (let i = 0; i < relic_types; i++) {
                 //make  roll for relics
-                roll = Math.random();
+                roll = await rollDice(1);
                 //decide which relics to give
                 if (roll > 0.5) {
-                    roll = Math.random();
+                    roll = await rollDice(1);
                     common_relics = (roll * 10) * round/4;
                 }
                 else if (roll > 0.4) {
-                    roll = Math.random();
+                    roll = await rollDice(1);
                     uncommon_relics = (roll * 10) * round/4;
 
                 }
                 else if (roll > 0.25) {
-                    roll = Math.random();
+                    roll = await rollDice(1);
                     rare_relics = (roll * 10) * round/4;
                 }
                 else if (roll > 0.10) {
-                    roll = Math.random();
+                    roll = await rollDice(1);
                     epic_relics = (roll * 10) * round/6;
                     
                 }
                 else if (roll > 0.05) {
-                    roll = Math.random();
+                    roll = await rollDice(1);
                     legendary_relics = (roll * 10) * round/8;
                 }
             }
 
         }
         else {
-            //round is 1 so no rewards
-            var scrap_reward = 0;
             var common_relics = 0;
             var uncommon_relics = 0;
             var rare_relics = 0;
@@ -752,7 +744,6 @@ async function selectQuest(round, user) {
         //log scraps, and shards to console
         console.log('------------------------------------------------------');
         console.log('Round: ' + round.toString() + ' Success Chance: ' + success_chance.toString() + ' for user: ' + user.username);
-        console.log('Scrap Reward: ' + scrap_reward.toString());
         console.log('Common Relics: ' + common_relics.toString());
         console.log('Uncommon Relics: ' + uncommon_relics.toString());
         console.log('Rare Relics: ' + rare_relics.toString());
@@ -768,14 +759,13 @@ async function selectQuest(round, user) {
             "success_chance": success_chance,
             "attribute_one": attribute_one,
             "attribute_two": attribute_two,
-            "attribut_one_value": base_stats[attribute_one],
+            "attribute_one_value": base_stats[attribute_one],
             "attribute_two_value": base_stats[attribute_two],
-            "scrap": scrap_reward,
-            "common_shards": common_relics,
-            "uncommon_shards": uncommon_relics,
-            "rare_shards": rare_relics,
-            "epic_shards": epic_relics,
-            "legendary_shards": legendary_relics,
+            "common_relics": common_relics,
+            "uncommon_relics": uncommon_relics,
+            "rare_relics": rare_relics,
+            "epic_relics": epic_relics,
+            "legendary_relics": legendary_relics,
         };
   
         //return quest
