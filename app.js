@@ -572,6 +572,8 @@ async function startQuest(username) {
                 activeQuest = await selectQuest(1, _username);
                 //add quest to active-quests collection
                 await collection.insertOne(activeQuest);
+                //log to quest-log in mongoDB
+                await db.collection('quest-log').insertOne({username: username, action: 'start', quest: activeQuest, time: new Date()});
             }
             else {
                 console.log('User ' + username + ' already has a quest');
