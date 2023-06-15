@@ -1040,6 +1040,15 @@ async function listen() {
                                             });
                                  
                                         }
+                                        else if (payload.memo.planet == 'Arborealis' && payload.quantity === '4') {
+                                            let sender = res['transactions'][i]['sender'];
+                                            let hash = payload.memo.hash;
+                                            let qty = payload.quantity;
+                                            let planet = payload.memo.planet;
+                                            bossFight(sender, planet, hash.split('-')[1]).then(function(result){
+                                                storeHash(hash, sender, qty);
+                                            });
+                                        }
                                 
                                     }
                                     else if (payload.memo.hash.split('-')[0] == 'terracore_quest_start'){
