@@ -769,6 +769,7 @@ async function selectQuest(round, user) {
             "rare_relics": rare_relics,
             "epic_relics": epic_relics,
             "legendary_relics": legendary_relics,
+            "time": Date.now()
         };
   
         //return quest
