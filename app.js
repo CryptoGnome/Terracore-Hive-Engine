@@ -666,74 +666,23 @@ async function selectQuest(round, user) {
             var legendary_relics = 0;
 
             var relic_types = 1;
-            if (round > 5) {
-                if (roll < 0.5) {
-                    relic_types = 2;
-                }
-            }
-            if (round > 10) {
-                if (roll < 0.75) {
-                    relic_types = 2;
-                }
-                else if (roll < 0.5) {
-                    relic_types = 3;
-                }
 
-            }
-            if (round > 14) {
-                if (roll < 0.95) {
-                    relic_types = 2;
-                }
-                else if (roll < 0.75) {
-                    relic_types = 3;
-                }
-                else if (roll < 0.25) {
-                    relic_types = 4;
-                }
-            }
-            if (round > 18) {
-                if (roll < 0.98) {
-                    relic_types = 2
-                }
-                else if (roll < 0.75) {
-                    relic_types = 3;
-                }
-                else if (roll < 0.50) {
-                    relic_types = 4;
-                }
-                else if (roll < 0.2) {
-                    relic_types = 5;
-                }
-            }
-
-            //loop through shard_types and give relics
             for (let i = 0; i < relic_types; i++) {
                 //make  roll for relics
                 roll = await rollDice(1);
-                //decide which relics to give
-                if (roll > 0.5) {
+                // 70% chance to get common relic
+                if (roll <= 0.7) {
                     roll = await rollDice(1);
-                    common_relics = (roll * 10) * round/4;
+                    common_relics = (roll * 10) * round / 8;
                 }
-                else if (roll > 0.4) {
+                // 30% chance to get uncommon relic
+                else {
                     roll = await rollDice(1);
-                    uncommon_relics = (roll * 10) * round/4;
-
-                }
-                else if (roll > 0.25) {
-                    roll = await rollDice(1);
-                    rare_relics = (roll * 10) * round/4;
-                }
-                else if (roll > 0.10) {
-                    roll = await rollDice(1);
-                    epic_relics = (roll * 10) * round/6;
-                    
-                }
-                else if (roll > 0.05) {
-                    roll = await rollDice(1);
-                    legendary_relics = (roll * 10) * round/8;
+                    uncommon_relics = (roll * 10) * round / 8;
                 }
             }
+            
+            
 
         }
         else {
