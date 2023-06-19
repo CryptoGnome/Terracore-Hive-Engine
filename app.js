@@ -1057,7 +1057,7 @@ async function listen() {
                                             return;
                                         }
 
-                                        if(payload.quantity === '0.01' && res['transactions'][i]['sender'] == 'asgarth-dev' || res['transactions'][i]['sender'] == 'crypt0gnome'){
+                                        if(payload.quantity === '2'){
                                             startQuest(res['transactions'][i]['sender']);
                                             console.log('Quest Start Event Detected');
                                         }
