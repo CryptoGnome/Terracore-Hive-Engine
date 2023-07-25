@@ -110,6 +110,7 @@ async function bossWebhook(title, message, rarity, planet) {
     //check if stats are null
     var embed;
     var id;
+    
     //color select based on rarity
     switch (rarity) {
         case 'common':
@@ -151,6 +152,54 @@ async function bossWebhook(title, message, rarity, planet) {
     }
 
 }
+
+async function bossWebhook2(title, message, rarity, planet, type) {
+    //check if stats are null
+    var embed;
+    var id;
+    
+    //color select based on rarity
+    switch (rarity) {
+        case 'common':
+            color = '#bbc0c7';
+            id = 'common_crate';
+            break;
+        case 'uncommon':
+            color = '#538a62';
+            id = 'uncommon_crate';
+            break;
+        case 'rare':
+            color = '#2a2cbd';
+            id = 'rare_crate';
+            break;
+        case 'epic':
+            color = '#7c04cc';
+            id = 'epic_crate';
+            break;
+        case 'legendary':
+            color = '#d98b16';
+            id = 'legendary_crate';
+            break;
+    }
+
+    //set image
+    embed = new MessageBuilder()
+        .setTitle(title)
+        .addField('Message: ', message, true)
+        .addField('Planet: ', planet, true)
+        .setColor(color)
+        .setThumbnail(`https://terracore.herokuapp.com/images/${type}.png`)
+        .setTimestamp();
+    
+    try {
+        await boss_hook.send(embed);
+        console.log('Sent webhook successfully!');
+    } catch (err) {
+        console.log(chalk.red("Discord Webhook Error: ", err.message));
+    }
+
+}
+
 async function storeHash(hash, username, amount) {
     try{
         let db = client.db(dbName);
@@ -397,59 +446,121 @@ async function mintCrate(owner, _planet){
         //roll a random number 1 - 1000
         var roll = Math.floor(Math.random() * 1001)
         console.log('Item Roll: ' + roll);
+        //add second roll to decide if a create or consumable is minted
+        var roll2 = Math.floor(Math.random() * 1001)
+        console.log('Crate Roll: ' + roll2);
+
         let rarity;
+        let drop;
 
         if (_planet == 'Oceana') {
             if (roll <= 950) { rarity = 'uncommon'; } // 95 %
             else if (roll > 950 && roll <= 985) { rarity = 'rare'; } // 3.5 % 
             else if (roll > 985 && roll <= 995) { rarity = 'epic'; } // 1 %
             else if (roll > 995 && roll <= 1000) { rarity = 'legendary'; } // .5 %
+
+            //oceana 75% Consumable, 25% Crate
+            if (roll2 <= 750) { drop = 'consumable'; } // 75 %
+            else if (roll2 > 750 && roll2 <= 1000) { drop = 'crate'; } // 25 %
+
         }
         if (_planet == 'Celestia') {
             if (roll <= 900) { rarity = 'uncommon'; } // 90 %
             else if (roll > 900 && roll <= 970) { rarity = 'rare'; } // 7 %
             else if (roll > 970 && roll <= 992.5) { rarity = 'epic'; } // 2.25 %
             else if (roll > 992.5 && roll <= 1000) { rarity = 'legendary'; } // .75 %
+
+            //celestia 65% Consumable, 35% Crate
+            if (roll2 <= 650) { drop = 'consumable'; } // 65 %
+            else if (roll2 > 650 && roll2 <= 1000) { drop = 'crate'; } // 35 %
+
+
         }
         if (_planet == 'Arborealis') {
             if (roll <= 880) { rarity = 'uncommon'; } // 85 %
             else if (roll > 880 && roll <= 960) { rarity = 'rare'; } // 8 %
             else if (roll > 960 && roll <= 992) { rarity = 'epic'; } // 3 %
             else if (roll > 992 && roll <= 1000) { rarity = 'legendary'; } // 1 %
+
+            //arborealis 60% Consumable, 40% Crate
+            if (roll2 <= 600) { drop = 'consumable'; } // 55 %
+            else if (roll2 > 600 && roll2 <= 1000) { drop = 'crate'; } // 45 %
+
+
         }
-        
-        let count = await db.collection('crate-count').findOne({supply: 'total'});
 
-        //create crate object
-        let crate = new Object();
-        crate.name = rarity.charAt(0).toUpperCase() + rarity.slice(1) + ' Loot Crate';
-        crate.rarity = rarity;
-        crate.owner = owner;
-        crate.item_number = count.count + 1;
-        crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
-        crate.equiped = false;
-        //add market object to crate
-        let market = new Object();
-        market.listed = false;
-        market.price = 0;
-        market.seller = null;
-        market.created = 0;
-        market.expires = 0;
-        market.sold = 0;
+        console.log('Drop: ' + drop);
 
-        //add market object to crate
-        crate.market = market;
+        //check type
+        if (drop == 'crate') {           
+            let count = await db.collection('crate-count').findOne({supply: 'total'});
+
+            //create crate object
+            let crate = new Object();
+            crate.name = rarity.charAt(0).toUpperCase() + rarity.slice(1) + ' Loot Crate';
+            crate.rarity = rarity;
+            crate.owner = owner;
+            crate.item_number = count.count + 1;
+            crate.image = "https://terracore.herokuapp.com/images/" + rarity + '_crate.png';
+            crate.equiped = false;
+            //add market object to crate
+            let market = new Object();
+            market.listed = false;
+            market.price = 0;
+            market.seller = null;
+            market.created = 0;
+            market.expires = 0;
+            market.sold = 0;
+
+            //add market object to crate
+            crate.market = market;
 
 
-        //add crate to database
-        collection.insertOne(crate);
-        console.log('Minted crate: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
-        bossWebhook('Crate Dropped!', crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, crate.rarity, _planet);
-        await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
+            //add crate to database
+            db.collection('crates').insertOne(crate);
+            console.log('Minted crate: ' + crate.name + ' with rarity: ' + crate.rarity + ' with owner: ' + crate.owner + ' with item number: ' + crate.item_number);
+            bossWebhook('Crate Dropped!', crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, crate.rarity, _planet);
+            await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
 
-        //log to nft-drops in mongoDB
-        await db.collection('nft-drops').insertOne({name: crate.name, rarity: crate.rarity, owner: crate.owner, item_number: crate.item_number, purchased: false, time: new Date()});
-        return crate;
+            //log to nft-drops in mongoDB
+            await db.collection('nft-drops').insertOne({name: crate.name, rarity: crate.rarity, owner: crate.owner, item_number: crate.item_number, purchased: false, time: new Date()});
+            return crate;
+        }
+        else if (drop == 'consumable') {
+            var type;
+            if (rarity == 'uncommon') {
+                var types = ['attack', 'claim', 'crit', 'damage', 'dodge'];
+                //choose random type
+                type = types[Math.floor(Math.random() * types.length)];
+            }
+            else{
+                var types = ['protection'];
+                //choose random type
+                type = types[Math.floor(Math.random() * types.length)];
+
+            }
+
+
+            var collection = db.collection('consumables');
+            let player = await collection.findOne({ username : owner , type: type + '_consumable' });
+            if (!player) {
+                console.log('Player does not have consumable: ' + type + ' creating new entry');
+                //insert player into collection with   "market": {
+                await collection.insertOne({ username: owner, version: 1, type: type + '_consumable', amount: 1, market: { listed: false, amount: 0, price: 0, seller: null, created: 0, expires: 0, sold: 0 } });
+                bossWebhook2('Consumable Dropped!', 'A ' + rarity + ' ' + type + ' consumable has dropped for ' + owner + '!', rarity, _planet, type + '_consumable');
+                await db.collection('nft-drops').insertOne({name: type + '_consumable', rarity: rarity, owner: owner, item_number: null, purchased: false, time: new Date()});
+                return true;
+            }
+
+            //update player collection adding relics to player9
+            console.log('Minted Consumable: ' + type + ' for ' + owner)
+            await collection.updateOne({ username: owner, type: type + '_consumable' }, { $inc: { amount: 1 } });
+            // webhook
+            bossWebhook2('Consumable Dropped!', 'A ' + rarity + ' ' + type + ' consumable has dropped for ' + owner + '!', rarity, _planet, type + '_consumable');
+            await db.collection('nft-drops').insertOne({name: type + '_consumable', rarity: rarity, owner: owner, item_number: null, purchased: false, time: new Date()});
+            return true;
+        }
+
 
     }
     catch(err){
@@ -1097,5 +1208,4 @@ setInterval(function() {
 }, 1000);
 
 listen();
-
 
