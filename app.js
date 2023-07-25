@@ -483,8 +483,8 @@ async function mintCrate(owner, _planet){
             else if (roll > 992 && roll <= 1000) { rarity = 'legendary'; } // 1 %
 
             //arborealis 60% Consumable, 40% Crate
-            if (roll2 <= 600) { drop = 'consumable'; } // 55 %
-            else if (roll2 > 600 && roll2 <= 1000) { drop = 'crate'; } // 45 %
+            if (roll2 <= 600) { drop = 'consumable'; } // 60 %
+            else if (roll2 > 600 && roll2 <= 1000) { drop = 'crate'; } // 40 %
 
 
         }
