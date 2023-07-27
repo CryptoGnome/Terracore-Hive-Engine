@@ -525,7 +525,7 @@ async function mintCrate(owner, _planet){
 
             //log to nft-drops in mongoDB
             await db.collection('nft-drops').insertOne({name: crate.name, rarity: crate.rarity, owner: crate.owner, item_number: crate.item_number, purchased: false, time: new Date()});
-            return crate;
+            return drop;
         }
         else if (drop == 'consumable') {
             var type;
@@ -550,7 +550,7 @@ async function mintCrate(owner, _planet){
                 await collection.insertOne({ username: owner, version: 1, type: type + '_consumable', amount: 1, market: { listed: false, amount: 0, price: 0, seller: null, created: 0, expires: 0, sold: 0 } });
                 bossWebhook2('Consumable Dropped!', 'A ' + rarity + ' ' + type + ' consumable has dropped for ' + owner + '!', rarity, _planet, type + '_consumable');
                 await db.collection('nft-drops').insertOne({name: type + '_consumable', rarity: rarity, owner: owner, item_number: null, purchased: false, time: new Date()});
-                return true;
+                return drop;
             }
 
             //update player collection adding relics to player9
@@ -559,7 +559,7 @@ async function mintCrate(owner, _planet){
             // webhook
             bossWebhook2('Consumable Dropped!', 'A ' + rarity + ' ' + type + ' consumable has dropped for ' + owner + '!', rarity, _planet, type + '_consumable');
             await db.collection('nft-drops').insertOne({name: type + '_consumable', rarity: rarity, owner: owner, item_number: null, purchased: false, time: new Date()});
-            return true;
+            return drop;
         }
 
 
@@ -624,15 +624,15 @@ async function bossFight(username, _planet) {
                         console.log("------  BOSS MISSED: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
                         //set new lastBattle for _planet in planets array
                         await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
-                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, time: Date.now()});
+                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, drop:null, time: Date.now()});
                         return false;
                     }
                     else {
                         console.log("------  ITEM FOUND: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
                         //set new lastBattle for _planet in planets array
                         await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
-                        await mintCrate(username, _planet);
-                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, time: Date.now()});
+                        var drop_type = await mintCrate(username, _planet);
+                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, drop:drop_type, time: Date.now()});
                         return true;
                     }
                 }
