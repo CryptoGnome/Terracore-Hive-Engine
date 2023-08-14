@@ -254,6 +254,7 @@ async function engineering(username, quantity) {
             if (quantity == cost){ 
                 let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}, $inc: {version: 1}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
+                    await collection.updateOne({username: username}, {$inc: {experience: quantity}});
                     webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
                     return true;
                 }
@@ -298,6 +299,7 @@ async function defense(username, quantity) {
             if (quantity == cost){ 
                 let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}}, {$inc: {version: 1}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
+                    await collection.updateOne({username: username}, {$inc: {experience: quantity}});
                     webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                     return true;
                 }
@@ -343,6 +345,7 @@ async function damage(username, quantity) {
             if (quantity == cost){ 
                 let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}}, {$inc: {version: 1}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
+                    await collection.updateOne({username: username}, {$inc: {experience: quantity}});
                     webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
                     return true;
                 }
@@ -382,6 +385,8 @@ async function contribute(username, quantity) {
 
         //check starting favor
         let qty = parseFloat(quantity);
+        //increment expereince by qty
+        await collection.updateOne({username: username}, {$inc: {experience: qty}});
         let newFavor = user.favor + qty;
 
         let maxAttempts = 3;
@@ -577,9 +582,9 @@ async function mintCrate(owner, _planet){
 //create a fucntion to roll to see if user gets a crate
 async function bossFight(username, _planet) {
     try{
-        
         //load player collection
         let db = client.db(dbName);
+        await db.collection('players').updateOne({ username: username }, { $inc: { experience: 10 } });
         let collection = db.collection('players');
         let user = await collection.findOne({ username: username });
         var luck = 0;
@@ -676,6 +681,9 @@ async function startQuest(username) {
         let user = await collection.findOne({ username: username });
         //get username from players collection
         let _username = await db.collection('players').findOne({ username: username });
+
+        //add 10 Expereince to player
+        await db.collection('players').updateOne({ username: username }, { $inc: { experience: 5 } });
    
         if(_username) {
             var activeQuest;
