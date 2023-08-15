@@ -252,9 +252,8 @@ async function engineering(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}, $inc: {version: 1}});
+                let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}, $inc: {version: 1, experience: quantity}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
-                    await collection.updateOne({username: username}, {$inc: {experience: quantity}});
                     webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
                     return true;
                 }
@@ -297,9 +296,8 @@ async function defense(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}}, {$inc: {version: 1}});
-                if(update.acknowledged == true && update.modifiedCount == 1) {
-                    await collection.updateOne({username: username}, {$inc: {experience: quantity}});
+                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}}, {$inc: {version: 1, experience: quantit}});
+                if(update.acknowledged == true && update.modifiedCount == 1) {                 
                     webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                     return true;
                 }
@@ -343,9 +341,8 @@ async function damage(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}}, {$inc: {version: 1}});
+                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}}, {$inc: {version: 1, experience: quantity}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
-                    await collection.updateOne({username: username}, {$inc: {experience: quantity}});
                     webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
                     return true;
                 }
@@ -385,14 +382,12 @@ async function contribute(username, quantity) {
 
         //check starting favor
         let qty = parseFloat(quantity);
-        //increment expereince by qty
-        await collection.updateOne({username: username}, {$inc: {experience: qty}});
         let newFavor = user.favor + qty;
 
         let maxAttempts = 3;
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
-            let update = await collection.updateOne({username: username}, {$set: {favor: newFavor}}, {$inc: {version: 1}});
+            let update = await collection.updateOne({username: username}, {$set: {favor: newFavor}}, {$inc: {version: 1, experience: qty}});
             if(update.acknowledged == true && update.modifiedCount == 1) {
                 webhook('Contributor', username + ' contributed ' + qty + ' favor', '#00ff00');
                 //update global favor 
