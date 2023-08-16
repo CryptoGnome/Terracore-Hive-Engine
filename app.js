@@ -296,7 +296,7 @@ async function defense(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}}, {$inc: {version: 1, experience: quantit}});
+                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}}, {$inc: {version: 1, experience: quantity}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {                 
                     webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                     return true;
