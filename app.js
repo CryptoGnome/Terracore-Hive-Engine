@@ -958,11 +958,19 @@ async function sendTransactions() {
                     await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id});
                 }
+                else {
+                    //delete transaction
+                    await collection.deleteOne({_id: transaction._id});
+                }
             }
             else if (transaction.type == 'contribute') {
                 var result2 = await contribute(transaction.username, transaction.quantity);
                 if (result2) {
                     await storeHash(transaction.hash, transaction.username, transaction.quantity);
+                    await collection.deleteOne({_id: transaction._id});
+                }
+                else {
+                    //delete transaction
                     await collection.deleteOne({_id: transaction._id});
                 }
             }
@@ -972,6 +980,10 @@ async function sendTransactions() {
                     await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id});
                 }
+                else {
+                    //delete transaction
+                    await collection.deleteOne({_id: transaction._id});
+                }
             }
             else if (transaction.type == 'damage') {
                 var result4 = await damage(transaction.username, transaction.quantity);
@@ -979,19 +991,27 @@ async function sendTransactions() {
                     await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id});
                 }
+                else {
+                    //delete transaction
+                    await collection.deleteOne({_id: transaction._id});
+                }
             }
             else if (transaction.type == 'buy_crate') {
                 var result5 = await buy_crate(transaction.username, transaction.quantity);
                 if (result5) {
                     await storeHash(transaction.hash, transaction.username, transaction.quantity);
+                    await collection.deleteOne({_id: transaction._id}); 
+                }
+                else {
+                    //delete transaction
                     await collection.deleteOne({_id: transaction._id});
-                    
                 }
             }
             else{
                 console.log('unknown transaction type');
                 await collection.deleteOne({_id: transaction._id});
             } 
+            
         }
         return true;
     }
