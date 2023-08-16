@@ -296,7 +296,7 @@ async function defense(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}}, {$inc: {version: 1, experience: parseFloat(cost)}});
+                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}, $inc: {version: 1, experience: parseFloat(cost)}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {                 
                     webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                     return true;
@@ -341,7 +341,7 @@ async function damage(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}}, {$inc: {version: 1, experience: parseFloat(cost)}});
+                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}, $inc: {version: 1, experience: parseFloat(quantity)}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
                     return true;
@@ -387,7 +387,7 @@ async function contribute(username, quantity) {
         let maxAttempts = 3;
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
-            let update = await collection.updateOne({username: username}, {$set: {favor: newFavor}}, {$inc: {version: 1, experience: qty}});
+            let update = await collection.updateOne({username: username}, {$set: {favor: newFavor}, $inc: {version: 1, experience: qty}});
             if(update.acknowledged == true && update.modifiedCount == 1) {
                 webhook('Contributor', username + ' contributed ' + qty + ' favor', '#00ff00');
                 //update global favor 
