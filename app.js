@@ -579,7 +579,7 @@ async function bossFight(username, _planet) {
     try{
         //load player collection
         let db = client.db(dbName);
-        await db.collection('players').updateOne({ username: username }, { $inc: { version: 1, experience: 50 } });
+        await db.collection('players').updateOne({ username: username }, { $inc: { version: 1, experience: 100 } });
         let collection = db.collection('players');
         let user = await collection.findOne({ username: username });
         var luck = 0;
@@ -678,7 +678,7 @@ async function startQuest(username) {
         let _username = await db.collection('players').findOne({ username: username });
 
         //add 10 Expereince to player
-        await db.collection('players').updateOne({ username: username }, { $inc: { version: 1, experience: 25 } });
+        await db.collection('players').updateOne({ username: username }, { $inc: { version: 1, experience: 50 } });
    
         if(_username) {
             var activeQuest;
