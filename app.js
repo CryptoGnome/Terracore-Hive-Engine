@@ -11,8 +11,8 @@ const market_hook = new Webhook(process.env.MARKET_WEBHOOK);
 const boss_hook = new Webhook(process.env.BOSS_WEBHOOK);
 const wif = process.env.ACTIVE_KEY;
 const dbName = 'terracore';
-var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 7000 });
-
+var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 30000 });
+const db = client.db(dbName);
 
 //find node to use
 const nodes = ["https://engine.deathwing.me", "https://enginerpc.com", "https://herpc.dtools.dev", "https://ctpmain.com", "https://he.atexoras.com:2083","https://herpc.liotes.com", "https://herpc.tribaldex.com", "https://engine.hive.pizza", "https://api.primersion.com", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
@@ -23,7 +23,7 @@ async function findNode() {
     var currentNode;
     /*
     try {
-        let db = client.db(dbName);
+
         let collection = db.collection('he-node');
         let lastNode = await collection.findOne({ "global" : { $exists: true } });
         if (lastNode) {
@@ -202,7 +202,6 @@ async function bossWebhook2(title, message, rarity, planet, type) {
 
 async function storeHash(hash, username, amount) {
     try{
-        let db = client.db(dbName);
         let collection = db.collection('hashes');
         await collection.insertOne({hash: hash, username: username, amount: parseFloat(amount), time: Date.now()});
         console.log('Hash ' + hash + ' stored');
@@ -219,7 +218,6 @@ async function storeHash(hash, username, amount) {
 }
 async function storeRejectedHash(hash, username) {
     try{
-        let db = client.db(dbName);
         let collection = db.collection('rejectedHashes');
         await collection.insertOne({hash: hash, username: username, time: Date.now()});
         console.log('Rejected Hash ' + hash + ' stored');
@@ -237,7 +235,7 @@ async function storeRejectedHash(hash, username) {
 //engineering upgrade
 async function engineering(username, quantity) {
     try{
-        let db = client.db(dbName);
+
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
 
@@ -281,7 +279,6 @@ async function engineering(username, quantity) {
 //defense upgrade
 async function defense(username, quantity) {
     try{
-        let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
 
@@ -326,7 +323,6 @@ async function defense(username, quantity) {
 //damage upgrade
 async function damage(username, quantity) {
     try{
-        let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({ username : username });
 
@@ -371,7 +367,6 @@ async function damage(username, quantity) {
 //contributor upgrade
 async function contribute(username, quantity) {
     try{
-        let db = client.db(dbName);
         let collection = db.collection('players');
         let user = await collection.findOne({username: username});
 
@@ -415,7 +410,6 @@ async function contribute(username, quantity) {
 
 //update global favor
 async function globalFavorUpdate(qty){
-    let db = client.db(dbName);
     const stats = db.collection('stats');
     let maxAttempts = 3;
     let delay = 500;
@@ -440,7 +434,6 @@ async function globalFavorUpdate(qty){
 async function mintCrate(owner, _planet){
     try{
         //load crate collection
-        let db = client.db(dbName); 
         var collection = db.collection('crates');
 
         //roll a random number 1 - 1000
@@ -464,6 +457,7 @@ async function mintCrate(owner, _planet){
             else if (roll2 > 750 && roll2 <= 1000) { drop = 'crate'; } // 25 %
 
         }
+        //set any other planet to 40% crate, 60% consumable
         if (_planet == 'Celestia') {
             if (roll <= 900) { rarity = 'uncommon'; } // 90 %
             else if (roll > 900 && roll <= 970) { rarity = 'rare'; } // 7 %
@@ -473,7 +467,6 @@ async function mintCrate(owner, _planet){
             //celestia 65% Consumable, 35% Crate
             if (roll2 <= 650) { drop = 'consumable'; } // 65 %
             else if (roll2 > 650 && roll2 <= 1000) { drop = 'crate'; } // 35 %
-
 
         }
         if (_planet == 'Arborealis') {
@@ -485,8 +478,6 @@ async function mintCrate(owner, _planet){
             //arborealis 50% Consumable, 50% Crate
             if (roll2 <= 500) { drop = 'consumable'; } // 50 %
             else if (roll2 > 500 && roll2 <= 1000) { drop = 'crate'; } // 50 %
-
-
         }
 
 
@@ -578,7 +569,6 @@ async function mintCrate(owner, _planet){
 async function bossFight(username, _planet) {
     try{
         //load player collection
-        let db = client.db(dbName);
         await db.collection('players').updateOne({ username: username }, { $inc: { version: 1, experience: 100 } });
         let collection = db.collection('players');
         let user = await collection.findOne({ username: username });
@@ -671,7 +661,6 @@ async function startQuest(username) {
     //if so return false else insert quest into active-quests collection
     try{
         //check if user is in active-quests collection
-        let db = client.db(dbName);
         let collection = db.collection('active-quests');
         let user = await collection.findOne({ username: username });
         //get username from players collection
@@ -722,7 +711,6 @@ async function startQuest(username) {
 async function selectQuest(round, user) {
     //go into quest-template collection and select a random quest then add it to users current quest
     try{
-        let db = client.db(dbName);
         let collection = db.collection('quest-template');
         let quests = await collection.find({}).toArray();
 
@@ -863,7 +851,6 @@ async function selectQuest(round, user) {
 async function buy_crate(owner, quantity){
     try{
         //load crate collection
-        let db = client.db(dbName); 
         var collection = db.collection('price_feed');
         var price = await collection.findOne({date: "global"});
 
@@ -928,7 +915,6 @@ async function buy_crate(owner, quantity){
 //create a function where you can send transactions to be queued to be sent
 async function sendTransaction(username, quantity, type, hash){
     try{
-        let db = client.db(dbName);
         let collection = db.collection('he-transactions');
         let result = await collection.insertOne({username: username, quantity: quantity, type: type, hash: hash, time: new Date()});
         console.log('Transaction ' + result.insertedId + ' added to queue');
@@ -946,7 +932,6 @@ async function sendTransaction(username, quantity, type, hash){
 //create a function that can be called to send all transactions in the queue
 async function sendTransactions() {
     try{
-        let db = client.db(dbName);
         let collection = db.collection('he-transactions');
         let transactions = await collection.find({}).toArray();
         for (let i = 0; i < transactions.length; i++) {
