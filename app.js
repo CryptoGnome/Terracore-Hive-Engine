@@ -596,26 +596,26 @@ async function bossFight(username, _planet) {
         else {
             //get luck
             luck = user.stats.luck;
+            //get users level
+            var level = user.level;
 
-            //call planets collection to see if the user can access the planet and has the fuel
-            let planets = db.collection('planets');
-            let planet = await planets.findOne({ username: username });
-            //check the planets array to see if the user has access to the planet (it just needs to be in the array)
-            //loop through the planets array to see if the user has access to the planet
+            //check if users level is greater than the level required to access the planet in the player boss_data
             var found = false;
             var index = 0;
-            for (var i = 0; i < planet.planets.length; i++) {
-                if (planet.planets[i].name == _planet) {
-                    found = true;
-                    index = i;
-                    break;
+            for (let i = 0; i < user.boss_data.length; i++) {
+                if (user.boss_data[i].name == _planet) {
+                    //check of the users level is greater than the level required to access the planet
+                    if (level >= user.boss_data[i].level) {
+                        found = true;
+                        index = i;
+                    }
                 }
             }
+
             //if the user has access to the 
             if (found == true) {
-
                 //check if the last battle was more than 4 hours ago
-                if (Date.now() - planet.planets[index].lastBattle < 14400000) {
+                if (Date.now() - user.boss_data[index].lastBattle < 14400000) {
                     console.log('User: ' + username + ' has already battled the boss in the last 4 hours');
                     return false;
                 }
@@ -627,15 +627,15 @@ async function bossFight(username, _planet) {
                     //if roll is greater than drop chance then return false
                     if (roll > luck) {
                         console.log("------  BOSS MISSED: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
-                        //set new lastBattle for _planet in planets array
-                        await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
+                        //set new lastBattle planet om the players boss_data
+                        await collection.updateOne({ username: username }, { $set: { ["boss_data." + index + ".lastBattle"]: Date.now() } });
                         await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, drop:null, time: Date.now()});
                         return false;
                     }
                     else {
                         console.log("------  ITEM FOUND: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
-                        //set new lastBattle for _planet in planets array
-                        await planets.updateOne({ username: username }, { $set: { ["planets." + index + ".lastBattle"]: Date.now() } });
+                        //set new lastBattle planet om the players boss_data
+                        await collection.updateOne({ username: username }, { $set: { ["boss_data." + index + ".lastBattle"]: Date.now() } });
                         var drop_type = await mintCrate(username, _planet);
                         await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, drop:drop_type, time: Date.now()});
                         return true;
@@ -1114,14 +1114,21 @@ async function listen() {
                                             Neptolith: 2,
                                             Solisar: 2
                                         };
-                                    
-                                        const { planet, quantity, hash } = payload.memo;
+                  
+                                        const { hash, planet} = payload.memo;
+                                        const quantity =  parseFloat(payload.quantity);
                                         const sender = res['transactions'][i]['sender'];
                                         const bossFightHash = hash.split('-')[1];
+                                        console.log('Boss Fight Event Detected');
+                                        console.log('Planet: ' + planet);
+                                        console.log('Quantity: ' + quantity);
+                                        console.log('Hash: ' + hash);
                                     
-                                        if (planetQtyMapping[planet] === quantity) {
+                                        if (planetQtyMapping[planet] == quantity) {
+                                            console.log('Correct amount of flux sent');
                                             bossFight(sender, planet, bossFightHash)
                                                 .then(function(result) {
+                                                    console.log('Boss fight result:', result);
                                                     storeHash(hash, sender, quantity);
                                                 })
                                                 .catch(error => {
