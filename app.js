@@ -250,7 +250,7 @@ async function engineering(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer}, $inc: {version: 1, experience: parseFloat(cost)}});
+                let update = await collection.updateOne({username: username}, {$set: {engineering: newEngineer, last_upgrade_time: Date.now()}, $inc: {version: 1, experience: parseFloat(cost)}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Engineering Upgrade', username + ' upgraded engineering to level ' + newEngineer, 0x00ff00);
                     return true;
@@ -293,7 +293,7 @@ async function defense(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense}, $inc: {version: 1, experience: parseFloat(cost)}});
+                let update = await collection.updateOne({username: username}, {$set: {defense: newDefense, last_upgrade_time: Date.now()}, $inc: {version: 1, experience: parseFloat(cost)}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {                 
                     webhook('Defense Upgrade', username + ' upgraded defense to ' + newDefense, '#00ff00');
                     return true;
@@ -337,7 +337,7 @@ async function damage(username, quantity) {
         let delay = 500;
         for (let i = 0; i < maxAttempts; i++) {
             if (quantity == cost){ 
-                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage}, $inc: {version: 1, experience: parseFloat(quantity)}});
+                let update = await collection.updateOne({username: username}, {$set: {damage: newDamage, last_upgrade_time: Date.now()}, $inc: {version: 1, experience: parseFloat(quantity)}});
                 if(update.acknowledged == true && update.modifiedCount == 1) {
                     webhook('Damage Upgrade', username + ' upgraded damage to ' + newDamage, '#00ff00');
                     return true;
@@ -442,44 +442,60 @@ async function mintCrate(owner, _planet){
         //add second roll to decide if a create or consumable is minted
         var roll2 = Math.floor(Math.random() * 1001)
         console.log('Crate Roll: ' + roll2);
+  
+        //get rarity thresholds and values from planetConfig
+        const planetConfig = {
+            Terracore: {
+                rarityThresholds: [950, 985, 995, 1000],
+                rarityValues: ['uncommon', 'rare', 'epic', 'legendary'],
+                dropThresholds: [900, 1000],
+                dropValues: ['consumable', 'crate']
+            },
+            Oceana: {
+                rarityThresholds: [949, 983, 993, 1000],
+                rarityValues: ['uncommon', 'rare', 'epic', 'legendary'],
+                dropThresholds: [750, 1000],
+                dropValues: ['consumable', 'crate']
+            },
+            Celestia: {
+                rarityThresholds: [948, 982, 992, 1000],
+                rarityValues: ['uncommon', 'rare', 'epic', 'legendary'],
+                dropThresholds: [750, 1000],
+                dropValues: ['consumable', 'crate']
+            },
+            Arborealis: {
+                rarityThresholds: [947.5, 981, 991, 1000],
+                rarityValues: ['uncommon', 'rare', 'epic', 'legendary'],
+                dropThresholds: [500, 1000],
+                dropValues: ['consumable', 'crate']
+            },
+            Neptolith: {
+                rarityThresholds: [947, 980.5, 990.5, 1000],
+                rarityValues: ['uncommon', 'rare', 'epic', 'legendary'],
+                dropThresholds: [750, 1000],
+                dropValues: ['consumable', 'crate']
+            },
+            Solisar: {
+                rarityThresholds: [930, 975, 993, 1000],
+                rarityValues: ['uncommon', 'rare', 'epic', 'legendary'],
+                dropThresholds: [750, 1000],
+                dropValues: ['consumable', 'crate']
+            }
+        };
 
-        let rarity;
-        let drop;
-
-        if (_planet == 'Oceana') {
-            if (roll <= 950) { rarity = 'uncommon'; } // 95 %
-            else if (roll > 950 && roll <= 985) { rarity = 'rare'; } // 3.5 % 
-            else if (roll > 985 && roll <= 995) { rarity = 'epic'; } // 1 %
-            else if (roll > 995 && roll <= 1000) { rarity = 'legendary'; } // .5 %
-
-            //oceana 75% Consumable, 25% Crate
-            if (roll2 <= 750) { drop = 'consumable'; } // 75 %
-            else if (roll2 > 750 && roll2 <= 1000) { drop = 'crate'; } // 25 %
-
+        function getRarityAndDrop(planet, roll, roll2) {
+            const config = planetConfig[planet];
+            if (!config) {
+                throw new Error('Invalid planet');
+            }
+        
+            const rarity = config.rarityValues.find((value, index) => roll <= config.rarityThresholds[index]);
+            const drop = config.dropValues.find((value, index) => roll2 <= config.dropThresholds[index]);
+        
+            return { rarity, drop };
         }
-        //set any other planet to 40% crate, 60% consumable
-        if (_planet == 'Celestia') {
-            if (roll <= 900) { rarity = 'uncommon'; } // 90 %
-            else if (roll > 900 && roll <= 970) { rarity = 'rare'; } // 7 %
-            else if (roll > 970 && roll <= 992.5) { rarity = 'epic'; } // 2.25 %
-            else if (roll > 992.5 && roll <= 1000) { rarity = 'legendary'; } // .75 %
-
-            //celestia 65% Consumable, 35% Crate
-            if (roll2 <= 650) { drop = 'consumable'; } // 65 %
-            else if (roll2 > 650 && roll2 <= 1000) { drop = 'crate'; } // 35 %
-
-        }
-        if (_planet == 'Arborealis') {
-            if (roll <= 880) { rarity = 'uncommon'; } // 85 %
-            else if (roll > 880 && roll <= 960) { rarity = 'rare'; } // 8 %
-            else if (roll > 960 && roll <= 992) { rarity = 'epic'; } // 3 %
-            else if (roll > 992 && roll <= 1000) { rarity = 'legendary'; } // 1 %
-
-            //arborealis 50% Consumable, 50% Crate
-            if (roll2 <= 500) { drop = 'consumable'; } // 50 %
-            else if (roll2 > 500 && roll2 <= 1000) { drop = 'crate'; } // 50 %
-        }
-
+        
+        const { rarity, drop } = getRarityAndDrop(_planet, roll, roll2);
 
         console.log('Drop: ' + drop);
 
@@ -568,8 +584,7 @@ async function mintCrate(owner, _planet){
 //create a fucntion to roll to see if user gets a crate
 async function bossFight(username, _planet) {
     try{
-        //load player collection
-        await db.collection('players').updateOne({ username: username }, { $inc: { version: 1, experience: 100 } });
+        await db.collection('players').updateOne({ username: username }, { $set: { last_upgrade_time: Date.now() }, $inc: { version: 1, experience: 100 } });
         let collection = db.collection('players');
         let user = await collection.findOne({ username: username });
         var luck = 0;
@@ -667,7 +682,7 @@ async function startQuest(username) {
         let _username = await db.collection('players').findOne({ username: username });
 
         //add 10 Expereince to player
-        await db.collection('players').updateOne({ username: username }, { $inc: { version: 1, experience: 50 } });
+        await db.collection('players').updateOne({ username: username }, { $set: { last_upgrade_time: Date.now() }, $inc: { version: 1, experience: 50 } });
    
         if(_username) {
             var activeQuest;
@@ -1083,45 +1098,37 @@ async function listen() {
                             else if (payload.to == 'null' && payload.symbol == 'FLUX') {
                 
                                 try{
-                 
                                     //check if memo is terracore_boss_fight and if so call check planet
                                     if (payload.memo.hash.split('-')[0] == 'terracore_boss_fight') {
-                                        //check if transaction failed
+                                        // Check if transaction failed
                                         if (res['transactions'][i].logs.includes('errors')) {
                                             storeRejectedHash(hashStore, from);
                                             return;
                                         }
-  
-                                        if (payload.memo.planet == 'Oceana' && payload.quantity === '1') {
-                                            let sender = res['transactions'][i]['sender'];
-                                            let hash = payload.memo.hash;
-                                            let qty = payload.quantity;
-                                            let planet = payload.memo.planet;
-                                            bossFight(sender, planet, hash.split('-')[1]).then(function(result){
-                                                storeHash(hash, sender, qty);
-                                            });
+                                    
+                                        const planetQtyMapping = {
+                                            Terracore: 1,
+                                            Oceana: 2,
+                                            Celestia: 2,
+                                            Arborealis: 2,
+                                            Neptolith: 2,
+                                            Solisar: 2
+                                        };
+                                    
+                                        const { planet, quantity, hash } = payload.memo;
+                                        const sender = res['transactions'][i]['sender'];
+                                        const bossFightHash = hash.split('-')[1];
+                                    
+                                        if (planetQtyMapping[planet] === quantity) {
+                                            bossFight(sender, planet, bossFightHash)
+                                                .then(function(result) {
+                                                    storeHash(hash, sender, quantity);
+                                                })
+                                                .catch(error => {
+                                                    console.error('Error in boss fight:', error);
+                                                });
                                         }
-                                        else if (payload.memo.planet == 'Celestia' && payload.quantity === '2') {
-                                            let sender = res['transactions'][i]['sender'];
-                                            let hash = payload.memo.hash;
-                                            let qty = payload.quantity;
-                                            let planet = payload.memo.planet;
-                                            bossFight(sender, planet, hash.split('-')[1]).then(function(result){
-                                                storeHash(hash, sender, qty);
-                                            });
-                                 
-                                        }
-                                        else if (payload.memo.planet == 'Arborealis' && payload.quantity === '4') {
-                                            let sender = res['transactions'][i]['sender'];
-                                            let hash = payload.memo.hash;
-                                            let qty = payload.quantity;
-                                            let planet = payload.memo.planet;
-                                            bossFight(sender, planet, hash.split('-')[1]).then(function(result){
-                                                storeHash(hash, sender, qty);
-                                            });
-                                        }
-                                
-                                    }
+                                    }                                    
                                     else if (payload.memo.hash.split('-')[0] == 'terracore_quest_start'){
                                         if (res['transactions'][i].logs.includes('errors')) {
                                             storeRejectedHash(hashStore, from);
