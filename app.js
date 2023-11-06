@@ -541,8 +541,13 @@ async function mintCrate(owner, _planet){
                 //choose random type
                 type = types[Math.floor(Math.random() * types.length)];
             }
+            else if (rarity == 'rare') {
+                var types = ['rage', 'impenetrable', 'overload', 'rogue', 'battle', 'fury']
+                //choose random type
+                type = types[Math.floor(Math.random() * types.length)];
+            }
             else{
-                var types = ['protection', 'focus'];
+                var types = ['protection', 'focus', 'flurry' ];
                 //choose random type
                 type = types[Math.floor(Math.random() * types.length)];
 
