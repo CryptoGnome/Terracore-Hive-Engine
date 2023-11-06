@@ -910,6 +910,8 @@ async function buy_crate(owner, quantity){
         await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
         //add to nft-drops log
         await db.collection('nft-drops').insertOne({name: crate.name, rarity: crate.rarity, owner: crate.owner, item_number: crate.item_number, purchased: true, time: new Date()});
+        //purchasing a crate resets the last_upgrade_time
+        await db.collection('players').updateOne({ username: owner }, { $set: { last_upgrade_time: Date.now() }, $inc: { version: 1} });
         return true;
     }
     catch(err){
