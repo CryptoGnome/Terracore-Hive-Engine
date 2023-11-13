@@ -547,10 +547,9 @@ async function mintCrate(owner, _planet){
                 type = types[Math.floor(Math.random() * types.length)];
             }
             else{
-                var types = ['protection', 'focus', 'flurry' ];
+                var types = ['protection', 'focus'];
                 //choose random type
                 type = types[Math.floor(Math.random() * types.length)];
-
             }
 
 
