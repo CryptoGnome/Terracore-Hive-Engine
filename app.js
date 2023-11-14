@@ -532,7 +532,7 @@ async function mintCrate(owner, _planet, droproll, luck){
 
             //log boss_log
             //await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, drop:drop_type, time: Date.now()});
-            await db.collection('boss-logs').insertOne({username: crate.owner, planet: _planet, result: true, roll: roll, luck: luck, rarity: crate.rarity, drop: crate, time: Date.now()});
+            await db.collection('boss-log').insertOne({username: crate.owner, planet: _planet, result: true, roll: droproll, luck: luck, rarity: crate.rarity, drop: crate, time: Date.now()});
 
             //log to nft-drops in mongoDB
             await db.collection('nft-drops').insertOne({name: crate.name, rarity: crate.rarity, owner: crate.owner, item_number: crate.item_number, purchased: false, time: new Date()});
@@ -560,7 +560,7 @@ async function mintCrate(owner, _planet, droproll, luck){
             var collection = db.collection('consumables');
             let player = await collection.findOne({ username : owner , type: type + '_consumable' });
             //boss-log
-            await db.collection('boss-logs').insertOne({username: owner, planet: _planet, result: true, roll: roll, luck: luck, rarity: rarity, type: type + '_consumable', time: Date.now()});
+            await db.collection('boss-log').insertOne({username: owner, planet: _planet, result: true, roll: droproll, luck: luck, rarity: rarity, type: type + '_consumable', time: Date.now()});
 
             if (!player) {
                 console.log('Player does not have consumable: ' + type + ' creating new entry');
