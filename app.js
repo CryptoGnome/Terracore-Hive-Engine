@@ -431,7 +431,7 @@ async function globalFavorUpdate(qty){
 /////////// Planet Functions
 //////////
 ///////////////////////////////////////////////////
-async function mintCrate(owner, _planet){
+async function mintCrate(owner, _planet, droproll, luck){
     try{
         //load crate collection
         var collection = db.collection('crates');
@@ -530,6 +530,10 @@ async function mintCrate(owner, _planet){
             bossWebhook('Crate Dropped!', crate.name + ' with rarity: ' + crate.rarity + ' has dropped from a boss for ' + crate.owner + '!' + ' Item Number: ' + crate.item_number, crate.rarity, _planet);
             await db.collection('crate-count').updateOne({supply: 'total'}, {$inc: {count: 1}});
 
+            //log boss_log
+            //await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, drop:drop_type, time: Date.now()});
+            await db.collection('boss-logs').insertOne({username: crate.owner, planet: _planet, result: true, roll: roll, luck: luck, rarity: crate.rarity, drop: crate, time: Date.now()});
+
             //log to nft-drops in mongoDB
             await db.collection('nft-drops').insertOne({name: crate.name, rarity: crate.rarity, owner: crate.owner, item_number: crate.item_number, purchased: false, time: new Date()});
             return drop;
@@ -555,6 +559,9 @@ async function mintCrate(owner, _planet){
 
             var collection = db.collection('consumables');
             let player = await collection.findOne({ username : owner , type: type + '_consumable' });
+            //boss-log
+            await db.collection('boss-logs').insertOne({username: owner, planet: _planet, result: true, roll: roll, luck: luck, rarity: rarity, type: type + '_consumable', time: Date.now()});
+
             if (!player) {
                 console.log('Player does not have consumable: ' + type + ' creating new entry');
                 //insert player into collection with   "market": {
@@ -572,6 +579,7 @@ async function mintCrate(owner, _planet){
             await db.collection('nft-drops').insertOne({name: type + '_consumable', rarity: rarity, owner: owner, item_number: null, purchased: false, time: new Date()});
             return drop;
         }
+        
 
 
     }
@@ -640,8 +648,7 @@ async function bossFight(username, _planet) {
                         console.log("------  ITEM FOUND: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
                         //set new lastBattle planet om the players boss_data
                         await collection.updateOne({ username: username }, { $set: { ["boss_data." + index + ".lastBattle"]: Date.now() } });
-                        var drop_type = await mintCrate(username, _planet);
-                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: true, roll: roll, luck: luck, drop:drop_type, time: Date.now()});
+                        await mintCrate(username, _planet, roll, luck);
                         return true;
                     }
                 }
