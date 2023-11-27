@@ -14,68 +14,64 @@ const dbName = 'terracore';
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 30000 });
 const db = client.db(dbName);
 
-//find node to use
-const nodes = ["https://engine.deathwing.me", "https://enginerpc.com", "https://herpc.dtools.dev", "https://ctpmain.com", "https://he.atexoras.com:2083","https://herpc.liotes.com", "https://herpc.tribaldex.com", "https://engine.hive.pizza", "https://api.primersion.com", "https://engine.rishipanthee.com", "https://api.primersion.com", "https://api.hive-engine.com", "https://api2.hive-engine.com", "https://herpc.actifit.io", "https://api.primersion.com"];
+const nodes = ["https://engine.deathwing.me", "https://enginerpc.com", "https://ha.herpc.dtools.dev", "https://herpc.tribaldex.com", "https://ctpmain.com", "https://engine.hive.pizza", "https://he.atexoras.com:2083",  "https://api2.hive-engine.com/rpc", "https://api.primersion.com", "https://engine.beeswap.tools", "https://herpc.dtools.dev", "https://api.hive-engine.com/rpc", "https://he.sourov.dev"];
 var node;
 
-async function findNode() {
-    //look in mongo for last node used
-    var currentNode;
-    /*
-    try {
-
-        let collection = db.collection('he-node');
-        let lastNode = await collection.findOne({ "global" : { $exists: true } });
-        if (lastNode) {
-            currentNode = lastNode.lastnode + 1;
-            if (currentNode > nodes.length - 1) {
-                currentNode = 0;
-            }
-            //update node in mongo
-            await collection.updateOne({global: true}, {$set: {lastnode: currentNode}});
-        }
-        else {
-            currentNode = 0;
-            //store node in mongo
-            await collection.insertOne({global: true, lastnode: currentNode});
-        }
-    }
-    catch (err) {
-        if(err instanceof MongoTopologyClosedError) {
-            console.log('MongoDB connection closed');
-            process.exit(1);
-        }
-        else {
-            console.log(err);
-        }
-    console.log('Current node: ' + currentNode);
-    node = nodes[currentNode];
-    */
-
-    node = nodes[0];
-    while (true) {
-        try{
-            const response = await fetch(node);
-            const data = await response.json();
-            if (data) {
-                console.log('Node is online: ' + node);
-                break;
-            }
-            else {
-                console.log('Node is offline');
-                node = nodes[Math.floor(Math.random() * nodes.length)];
-                console.log('Checking another node: ' + node);
-            }
-        }
-        catch (err) {
-            console.log('Node is offline');
-            node = nodes[Math.floor(Math.random() * nodes.length)];
-            console.log('Checking another node: ' + node);
-            lastevent = Date.now();
-        }
-    }
-  
+function fetchWithTimeout(url, timeout = 3500) {
+    return Promise.race([
+        fetch(url),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), timeout)
+        )
+    ]);
 }
+
+function checkNode(node) {
+    return new Promise((resolve) => {
+        const start = Date.now();
+        fetchWithTimeout(node)
+            .then(response => {
+                const duration = Date.now() - start;
+                if (response.ok) {
+                    resolve({ node, duration, status: 'Success' });
+                } else {
+                    resolve({ node, duration, status: 'Failed: Response not OK' });
+                }
+            })
+            .catch(error => resolve({ node, duration: Date.now() - start, status: 'Failed: ' + error.message }));
+    });
+}
+
+async function findNode() {
+    const promises = nodes.map(node => checkNode(node));
+    try {
+        const results = await Promise.allSettled(promises);
+
+        // Print all results
+        results.forEach(result => {
+            if (result.status === 'fulfilled') {
+                console.log(`${result.value.node}: ${result.value.status}, Time: ${result.value.duration}ms`);
+            } else {
+                console.log(`Error: ${result.reason}`);
+            }
+        });
+
+        const successfulResults = results
+            .filter(result => result.status === 'fulfilled' && result.value.status === 'Success')
+            .map(result => result.value);
+        
+        if (successfulResults.length === 0) throw new Error('No nodes are available');
+        
+        // Set the fastest node
+        const fastestNode = successfulResults.sort((a, b) => a.duration - b.duration)[0].node;
+        node = fastestNode;
+        console.log('Fastest node is: ' + node);
+        return node;
+    } catch (error) {
+        console.error('Error finding the fastest node:', error.message);
+    }
+}
+
 
 async function webhook(title, message, color) {
     const embed = new MessageBuilder()
@@ -1055,7 +1051,6 @@ var lastevent = Date.now();
 var lastCheck = Date.now();
 //aysncfunction to start listening for events
 async function listen() {
-    await findNode();
     checkTransactions();
     const ssc = new SSC(node);
     ssc.stream((err, res) => {
@@ -1217,6 +1212,10 @@ async function listen() {
     });
 }
 
+async function main() {
+    await findNode();
+    listen();
+}
 
 //kill process if no events have been received in 30 seconds
 setInterval(function() {
@@ -1232,8 +1231,6 @@ var heartbeat = 0;
 setInterval(function() {
     heartbeat++;
     if (heartbeat == 5) {
-        //log how man seconds since last lastCheck
-        //console.log('HeartBeat: ' + (Date.now() - lastCheck) + 'ms ago');
         heartbeat = 0;
     }
     if (Date.now() - lastCheck > 20000) {
@@ -1243,5 +1240,5 @@ setInterval(function() {
     }
 }, 1000);
 
-listen();
+main();
 
