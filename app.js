@@ -14,7 +14,7 @@ const dbName = 'terracore';
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 30000 });
 const db = client.db(dbName);
 
-const nodes = ["https://engine.deathwing.me", "https://engine.splex.gg", "https://enginerpc.com", "https://ha.herpc.dtools.dev", "https://herpc.tribaldex.com", "https://ctpmain.com", "https://engine.hive.pizza", "https://he.atexoras.com:2083",  "https://api2.hive-engine.com/rpc", "https://api.primersion.com", "https://engine.beeswap.tools", "https://herpc.dtools.dev", "https://api.hive-engine.com/rpc", "https://he.sourov.dev"];
+const nodes = ["https://engine.deathwing.me", "https://he.splex.gg", "https://enginerpc.com", "https://ha.herpc.dtools.dev", "https://herpc.tribaldex.com", "https://ctpmain.com", "https://engine.hive.pizza", "https://he.atexoras.com:2083",  "https://api2.hive-engine.com/rpc", "https://api.primersion.com", "https://engine.beeswap.tools", "https://herpc.dtools.dev", "https://api.hive-engine.com/rpc", "https://he.sourov.dev"];
 var node;
 
 function fetchWithTimeout(url, timeout = 3500) {
