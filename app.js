@@ -687,15 +687,15 @@ async function bossFight(username, _planet) {
                             luck = luck / 2;
                         }
 
-                        if (roll <= 50) {
+                        if (roll <= 70) {
                             rarity = 'common';
                             amount = Math.max((Math.random() * 2 * luck) + 1, minThreshold); 
                         }
-                        else if (roll <= 80) {
+                        else if (roll <= 90) {
                             rarity = 'uncommon';
                             amount = Math.max((Math.random() * 1.5 * luck) + 1, minThreshold); 
                         }
-                        else if (roll <= 95) {
+                        else if (roll <= 98) {
                             rarity = 'rare';
                             amount = Math.max((Math.random() * 1 * luck) + 1, minThreshold);
                         }
@@ -744,7 +744,6 @@ async function bossFight(username, _planet) {
 }
 
 
-bossFight('crypt0gnome', 'Arborealis');
 
 ////////////////////////////////////////////////////
 ////////////
