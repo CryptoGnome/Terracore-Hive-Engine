@@ -594,18 +594,25 @@ async function mintCrate(owner, _planet, droproll, luck){
 async function issue(username, type, amount, rarity){
     try{
         //see if user exists
+        console.log('Issuing ' + amount + ' ' + type + ' to ' + username);
         var db = client.db(dbName);
         var collection = db.collection('relics');
         let player = await collection.findOne({ username : username , type: type });
         if (!player) {
             //insert player into collection with   "market": {
             await collection.insertOne({ username: username, version: 1, type: type, amount: amount, market: { listed: false, amount: 0, price: 0, seller: null, created: 0, expires: 0, sold: 0 } });
+            //add to nft-drops
+            await db.collection('nft-drops').insertOne({name: type, rarity: rarity, owner: username, amount: amount, item_number: null, purchased: false, time: new Date()});
+            //boss webhook
+            bossWebhook2('Relic Dropped!', `${amount} ${type}  have dropped for ${username}!`, rarity, 'Terracore', type);
             return true;
         }
         //update player collection adding relics to player9
         await collection.updateOne({ username: username, type: type }, { $inc: { amount: amount } });
         //add to nft-drops
         await db.collection('nft-drops').insertOne({name: type, rarity: rarity, owner: username, amount: amount, item_number: null, purchased: false, time: new Date()});
+        //boss webhook
+        bossWebhook2('Relic Dropped!', `${amount} ${type} have dropped for ${username}!`, rarity, 'Terracore', type);
         return true;
     }
     catch (err) {
@@ -668,13 +675,17 @@ async function bossFight(username, _planet) {
                         console.log("------  BOSS MISSED: Boss Drop Roll: " + roll + " | " + " Drop Max Roll: " + luck + " ------");
                         //set new lastBattle planet om the players boss_data
                         await collection.updateOne({ username: username }, { $set: { ["boss_data." + index + ".lastBattle"]: Date.now() } });
-                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, drop:null, time: Date.now()});
                         //roll random rarity and random amount of relics with a multiplier from luck with the max roll being 5 Relics
                         var rarity = null;
                         var amount = null;
-                        luck = luck / 3;
+                        luck = luck / 5;
                         var minThreshold = 0.1;
                         var roll = Math.random() * 100;
+                        
+                        //extar check if planet is terracore halve the luck
+                        if(_planet == 'Terracore') {
+                            luck = luck / 2;
+                        }
 
                         if (roll <= 50) {
                             rarity = 'common';
@@ -698,7 +709,7 @@ async function bossFight(username, _planet) {
                         }
                         //issue relics to user
                         await issue(username, rarity + '_relics', amount, rarity);
-
+                        await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, drop: rarity + '_relics', amount: amount, time: Date.now()});
 
                         return false;
                     }
@@ -733,6 +744,7 @@ async function bossFight(username, _planet) {
 }
 
 
+bossFight('crypt0gnome', 'Arborealis');
 
 ////////////////////////////////////////////////////
 ////////////
