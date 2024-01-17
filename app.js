@@ -427,6 +427,7 @@ async function globalFavorUpdate(qty){
 /////////// Planet Functions
 //////////
 ///////////////////////////////////////////////////
+
 async function mintCrate(owner, _planet, droproll, luck){
     try{
         //load crate collection
@@ -589,6 +590,36 @@ async function mintCrate(owner, _planet, droproll, luck){
         }
     }
 }
+//functin to issue relics to user
+async function issue(username, type, amount, rarity){
+    try{
+        //see if user exists
+        var db = client.db(dbName);
+        var collection = db.collection('relics');
+        let player = await collection.findOne({ username : username , type: type });
+        if (!player) {
+            //insert player into collection with   "market": {
+            await collection.insertOne({ username: username, version: 1, type: type, amount: amount, market: { listed: false, amount: 0, price: 0, seller: null, created: 0, expires: 0, sold: 0 } });
+            return true;
+        }
+        //update player collection adding relics to player9
+        await collection.updateOne({ username: username, type: type }, { $inc: { amount: amount } });
+        //add to nft-drops
+        await db.collection('nft-drops').insertOne({name: type, rarity: rarity, owner: username, amount: amount, item_number: null, purchased: false, time: new Date()});
+        return true;
+    }
+    catch (err) {
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection closed');
+            client.close();
+            process.exit(1);
+        }
+        else {
+            console.log(err);
+            return true;
+        }
+    }
+}
 //create a fucntion to roll to see if user gets a crate
 async function bossFight(username, _planet) {
     try{
@@ -638,6 +669,37 @@ async function bossFight(username, _planet) {
                         //set new lastBattle planet om the players boss_data
                         await collection.updateOne({ username: username }, { $set: { ["boss_data." + index + ".lastBattle"]: Date.now() } });
                         await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, drop:null, time: Date.now()});
+                        //roll random rarity and random amount of relics with a multiplier from luck with the max roll being 5 Relics
+                        var rarity = null;
+                        var amount = null;
+                        luck = luck / 3;
+                        var minThreshold = 0.1;
+                        var roll = Math.random() * 100;
+
+                        if (roll <= 50) {
+                            rarity = 'common';
+                            amount = Math.max((Math.random() * 2 * luck) + 1, minThreshold); 
+                        }
+                        else if (roll <= 80) {
+                            rarity = 'uncommon';
+                            amount = Math.max((Math.random() * 1.5 * luck) + 1, minThreshold); 
+                        }
+                        else if (roll <= 95) {
+                            rarity = 'rare';
+                            amount = Math.max((Math.random() * 1 * luck) + 1, minThreshold);
+                        }
+                        else if (roll <= 99) {
+                            rarity = 'epic';
+                            amount = Math.max((Math.random() * 0.5 * luck) + 1, minThreshold); 
+                        }
+                        else {
+                            rarity = 'legendary';
+                            amount = Math.max(0.1 * luck, minThreshold); 
+                        }
+                        //issue relics to user
+                        await issue(username, rarity + '_relics', amount, rarity);
+
+
                         return false;
                     }
                     else {
@@ -669,6 +731,9 @@ async function bossFight(username, _planet) {
         }
     }
 }
+
+
+
 ////////////////////////////////////////////////////
 ////////////
 /////////// QUEST FUNCTIONS
