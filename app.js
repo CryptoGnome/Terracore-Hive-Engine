@@ -678,34 +678,34 @@ async function bossFight(username, _planet) {
                         //roll random rarity and random amount of relics with a multiplier from luck with the max roll being 5 Relics
                         var rarity = null;
                         var amount = null;
-                        luck = luck / 5;
+                        var luck_mod = luck / 5;
                         var minThreshold = 0.1;
                         var roll = Math.random() * 100;
                         
                         //extar check if planet is terracore halve the luck
                         if(_planet == 'Terracore') {
-                            luck = luck / 2;
+                            luck_mod = luck_mod / 2;
                         }
 
                         if (roll <= 70) {
                             rarity = 'common';
-                            amount = Math.max((Math.random() * 2 * luck) + 1, minThreshold); 
+                            amount = Math.max((Math.random() * 2 * luck_mod) + 1, minThreshold); 
                         }
                         else if (roll <= 90) {
                             rarity = 'uncommon';
-                            amount = Math.max((Math.random() * 1.5 * luck) + 1, minThreshold); 
+                            amount = Math.max((Math.random() * 1.5 * luck_mod) + 1, minThreshold); 
                         }
                         else if (roll <= 98) {
                             rarity = 'rare';
-                            amount = Math.max((Math.random() * 1 * luck) + 1, minThreshold);
+                            amount = Math.max((Math.random() * 1 * luck_mod) + 1, minThreshold);
                         }
                         else if (roll <= 99) {
                             rarity = 'epic';
-                            amount = Math.max((Math.random() * 0.5 * luck) + 1, minThreshold); 
+                            amount = Math.max((Math.random() * 0.5 * luck_mod) + 1, minThreshold); 
                         }
                         else {
                             rarity = 'legendary';
-                            amount = Math.max(0.1 * luck, minThreshold); 
+                            amount = Math.max(0.1 * luck_mod, minThreshold); 
                         }
                         //issue relics to user
                         await issue(username, rarity + '_relics', amount, rarity);
