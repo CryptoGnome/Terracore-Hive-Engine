@@ -591,7 +591,7 @@ async function mintCrate(owner, _planet, droproll, luck){
     }
 }
 //functin to issue relics to user
-async function issue(username, type, amount, rarity){
+async function issue(username, type, amount, rarity, planet){
     try{
         //see if user exists
         console.log('Issuing ' + amount + ' ' + type + ' to ' + username);
@@ -604,7 +604,7 @@ async function issue(username, type, amount, rarity){
             //add to nft-drops
             await db.collection('nft-drops').insertOne({name: type, rarity: rarity, owner: username, amount: amount, item_number: null, purchased: false, time: new Date()});
             //boss webhook
-            bossWebhook2('Relic Dropped!', `${amount} ${type}  have dropped for ${username}!`, rarity, 'Terracore', type);
+            bossWebhook2('Relic Dropped!', `${amount} ${type}  have dropped for ${username}!`, rarity, planet, type);
             return true;
         }
         //update player collection adding relics to player9
@@ -612,7 +612,7 @@ async function issue(username, type, amount, rarity){
         //add to nft-drops
         await db.collection('nft-drops').insertOne({name: type, rarity: rarity, owner: username, amount: amount, item_number: null, purchased: false, time: new Date()});
         //boss webhook
-        bossWebhook2('Relic Dropped!', `${amount} ${type} have dropped for ${username}!`, rarity, 'Terracore', type);
+        bossWebhook2('Relic Dropped!', `${amount} ${type} have dropped for ${username}!`, rarity, planet, type);
         return true;
     }
     catch (err) {
@@ -708,7 +708,7 @@ async function bossFight(username, _planet) {
                             amount = Math.max(0.1 * luck_mod, minThreshold); 
                         }
                         //issue relics to user
-                        await issue(username, rarity + '_relics', amount, rarity);
+                        await issue(username, rarity + '_relics', amount, rarity, _planet);
                         await db.collection('boss-log').insertOne({username: username, planet: _planet, result: false, roll: roll, luck: luck, drop: rarity + '_relics', amount: amount, time: Date.now()});
 
                         return false;
