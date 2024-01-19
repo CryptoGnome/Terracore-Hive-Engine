@@ -765,7 +765,7 @@ async function startQuest(username) {
         let _username = await db.collection('players').findOne({ username: username });
 
         //add 10 Expereince to player
-        await db.collection('players').updateOne({ username: username }, { $inc: { version: 1, experience: 50 } });
+        await db.collection('players').updateOne({ username: username }, { $set: { last_upgrade_time: Date.now() }, $inc: { version: 1, experience: 50 } });
    
         if(_username) {
             var activeQuest;
