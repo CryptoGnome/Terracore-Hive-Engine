@@ -680,26 +680,26 @@ async function bossFight(username, _planet) {
                         var amount = null;
                         var luck_mod = luck / 5;
                         var minThreshold = 0.1;
-                        var roll = Math.random() * 100;
+                        var roll2 = Math.random() * 100;
                         
                         //extar check if planet is terracore halve the luck
                         if(_planet == 'Terracore') {
                             luck_mod = luck_mod / 2;
                         }
 
-                        if (roll <= 70) {
+                        if (roll2 <= 70) {
                             rarity = 'common';
                             amount = Math.max((Math.random() * 2 * luck_mod) + 1, minThreshold); 
                         }
-                        else if (roll <= 90) {
+                        else if (roll2 <= 90) {
                             rarity = 'uncommon';
                             amount = Math.max((Math.random() * 1.5 * luck_mod) + 1, minThreshold); 
                         }
-                        else if (roll <= 98) {
+                        else if (roll2 <= 98) {
                             rarity = 'rare';
                             amount = Math.max((Math.random() * 1 * luck_mod) + 1, minThreshold);
                         }
-                        else if (roll <= 99) {
+                        else if (roll2 <= 99) {
                             rarity = 'epic';
                             amount = Math.max((Math.random() * 0.5 * luck_mod) + 1, minThreshold); 
                         }
