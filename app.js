@@ -1009,6 +1009,68 @@ async function buy_crate(owner, quantity){
     }
 }
 
+//upgrade item from flux
+async function upgradeItem(username, item_number, quantity) {
+    try{
+        let collection = db.collection('items');
+        //make sure item number us a number
+        item_number = parseInt(item_number);
+        //find item
+        let item = await collection.findOne({ owner: username, item_number: item_number });
+        //check if item exists
+        if (item == null) {
+            console.log('Item: ' + item_number + ' does not exist or does not belong to user: ' + username);
+            return false;
+        }
+        //double check user owns item
+        if (item.owner != username) {
+            console.log('Item: ' + item_number + ' does not belong to user: ' + username);
+            return false;
+        }
+
+        //calculate salvage value
+        let value = item.attributes.damage/2 + item.attributes.defense/2 + item.attributes.engineering * 5 + item.attributes.dodge * 5+ item.attributes.crit * 5 + item.attributes.luck * 10;
+        console.log('Item: ' + item_number + ' has a salvage value of: ' + value);
+
+        //check if item has a level
+        if (item.level == undefined) {
+            console.log('Item: ' + item_number + ' does not have a level');
+            //make level 1
+            await collection.updateOne({item_number: item_number }, { $set: {level: 1} });
+            item.level = 2;
+        }
+
+        //to upgrade an item user must send 3x the salvage value
+        if (quantity < value * 2.99) {
+            console.log('User: ' + username + ' did not send the correct amount of flux to upgrade item: ' + item_number);
+            return false;
+        }
+
+        if (item.salvaged == undefined || item.salvaged == false) {
+           //upgrade the item stats
+            await collection.updateOne({item_number: item_number }, { $inc: { "attributes.damage": 20, "attributes.defense": 20, "attributes.crit": 0.1, "attributes.luck": 0.1, "attributes.dodge": 0.1, "attributes.engineering": 0.1, level: 1} });
+            console.log('Item: ' + item_number + ' has been upgraded');
+            //store to forge log
+            await db.collection('forge-log').insertOne({username: username, item_number: item_number, level: item.level, flux: quantity, time: new Date()});
+            return true;
+          
+        }
+        else {
+            console.log('Item: ' + item_number + ' has already been salvaged');
+            return false;
+        }
+    }
+    catch(err){
+        if(err instanceof MongoTopologyClosedError) {
+            console.log('MongoDB connection is closed');
+            process.exit(1);
+        }
+        else{
+            console.log(err);
+        }
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 ////QUE AND SEND TRANSACTIONS/////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -1084,6 +1146,20 @@ async function sendTransactions() {
             else if (transaction.type == 'buy_crate') {
                 var result5 = await buy_crate(transaction.username, transaction.quantity);
                 if (result5) {
+                    await storeHash(transaction.hash, transaction.username, transaction.quantity);
+                    await collection.deleteOne({_id: transaction._id}); 
+                }
+                else {
+                    //delete transaction
+                    await collection.deleteOne({_id: transaction._id});
+                }
+            }
+            else if (transaction.type == 'forge') {
+                //get the item number from the hash
+                var item_number = transaction.hash.split('-')[1];
+                console.log('Item Number: ' + item_number + ' Sent to forge');
+                var result6 = await upgradeItem(transaction.username, item_number, transaction.quantity);
+                if (result6) {
                     await storeHash(transaction.hash, transaction.username, transaction.quantity);
                     await collection.deleteOne({_id: transaction._id}); 
                 }
@@ -1242,6 +1318,25 @@ async function listen() {
                                     
 
 
+                            }
+
+                            else if (payload.to =='terracore' && payload.symbol == 'FLUX'){
+                                //check if memo is terracore_boss_fight and if so call check planet
+                                console.log('Forge Event Detected');
+                                console.log('Memo: ' + payload.memo);
+                                if (payload.memo.split('-')[0] == 'terracore_forge') {
+                                    // Check if transaction failed
+                                    if (res['transactions'][i].logs.includes('errors')) {
+                                        storeRejectedHash(hashStore, from);
+                                        return;
+                                    }
+             
+                                    var quantity = payload.quantity;
+                                    var sender = res['transactions'][i]['sender'];
+                                    //call forge function
+                                    sendTransaction(sender, quantity, 'forge', hashStore);         
+                                }              
+                   
                             }
 
                         
