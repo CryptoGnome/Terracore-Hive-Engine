@@ -1322,6 +1322,7 @@ async function listen() {
 
                             else if (payload.to =='terracore' && payload.symbol == 'FLUX'){
                                 //check if memo is terracore_boss_fight and if so call check planet
+                                var hashStore = payload.memo;
                                 console.log('Forge Event Detected');
                                 console.log('Memo: ' + payload.memo);
                                 if (payload.memo.split('-')[0] == 'terracore_forge') {
