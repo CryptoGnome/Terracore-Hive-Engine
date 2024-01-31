@@ -1040,8 +1040,8 @@ async function upgradeItem(username, item_number, quantity) {
             item.level = 2;
         }
 
-        //to upgrade an item user must send 3x the salvage value
-        if (quantity < value * 2.99) {
+        //to upgrade an item user must send 1.5x the salvage value
+        if (quantity < value * 1.5) {
             console.log('User: ' + username + ' did not send the correct amount of flux to upgrade item: ' + item_number);
             return false;
         }
@@ -1052,6 +1052,8 @@ async function upgradeItem(username, item_number, quantity) {
             console.log('Item: ' + item_number + ' has been upgraded');
             //store to forge log
             await db.collection('forge-log').insertOne({username: username, item_number: item_number, level: item.level, flux: quantity, time: new Date()});
+            //update flux burned in stats for todays date date: "2024-01-31"
+            await db.collection('stats').updateOne({date: new Date().toISOString().split('T')[0]}, { $inc: {fluxBurned: quantity} });
             return true;
           
         }
