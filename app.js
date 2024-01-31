@@ -1047,8 +1047,8 @@ async function upgradeItem(username, item_number, quantity) {
         }
 
         if (item.salvaged == undefined || item.salvaged == false) {
-           //upgrade the item stats by 10% on each attribute the item has, and increase the level by 1 do not increase attributes the item does not have
-            await collection.updateOne({item_number: item_number }, { $set: {attributes: {damage: item.attributes.damage * 1.1, defense: item.attributes.defense * 1.1, engineering: item.attributes.engineering * 1.1, dodge: item.attributes.dodge * 1.1, crit: item.attributes.crit * 1.1, luck: item.attributes.luck * 1.1}, level: item.level + 1} });
+           //upgrade the item stats by 5% on each attribute the item has, and increase the level by 1 do not increase attributes the item does not have
+            await collection.updateOne({item_number: item_number }, { $set: {attributes: {damage: item.attributes.damage * 1.05, defense: item.attributes.defense * 1.05, engineering: item.attributes.engineering * 1.05, dodge: item.attributes.dodge * 1.05, crit: item.attributes.crit * 1.05, luck: item.attributes.luck * 1.05}, level: item.level + 1, salvaged: true} });
             console.log('Item: ' + item_number + ' has been upgraded');
             //store to forge log
             await db.collection('forge-log').insertOne({username: username, item_number: item_number, level: item.level, flux: quantity, time: new Date()});
