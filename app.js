@@ -1053,6 +1053,7 @@ async function upgradeItem(username, item_number, quantity) {
             console.log('Item: ' + item_number + ' does not have a level');
             //make level 1
             await collection.updateOne({item_number: item_number }, { $set: {level: 1} });
+            item.level = 1;
         }
 
         //to upgrade an item user must send 1.5x the salvage value
