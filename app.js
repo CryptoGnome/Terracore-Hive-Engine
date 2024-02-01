@@ -73,6 +73,56 @@ async function findNode() {
     }
 }
 
+function deepClone(obj) {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+
+    if (obj instanceof Date) {
+        return new Date(obj.getTime());
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.reduce((arr, item, i) => {
+            arr[i] = deepClone(item);
+            return arr;
+        }, []);
+    }
+
+    if (obj instanceof Object) {
+        return Object.keys(obj).reduce((newObj, key) => {
+            newObj[key] = deepClone(obj[key]);
+            return newObj;
+        }, {});
+    }
+
+    throw new Error(`Unable to copy object: ${obj}`);
+}
+
+function deepEqual(a, b) {
+    // Convert NaN to 0 for comparison purposes
+    a = Number.isNaN(a) ? 0 : a;
+    b = Number.isNaN(b) ? 0 : b;
+
+    if (a === b) return true;
+
+    if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+        return false;
+    }
+
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    if (keysA.length !== keysB.length) return false;
+
+    for (let key of keysA) {
+        if (!keysB.includes(key) || !deepEqual(a[key], b[key])) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 async function webhook(title, message, color) {
     const embed = new MessageBuilder()
