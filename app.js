@@ -9,6 +9,7 @@ require('dotenv').config();
 const hook = new Webhook(process.env.DISCORD_WEBHOOK);
 const market_hook = new Webhook(process.env.MARKET_WEBHOOK);
 const boss_hook = new Webhook(process.env.BOSS_WEBHOOK);
+const forge_hook = new Webhook(process.env.FORGE_WEBHOOK);
 const wif = process.env.ACTIVE_KEY;
 const dbName = 'terracore';
 var client = new MongoClient(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true, serverSelectionTimeoutMS: 30000 });
@@ -194,6 +195,21 @@ async function bossWebhook2(title, message, rarity, planet, type) {
         console.log(chalk.red("Discord Webhook Error: ", err.message));
     }
 
+}
+
+async function forgeWebhook(title, message) {
+    const embed = new MessageBuilder()
+        .setTitle(title)
+        .addField('Message: ', message, true)
+        .setColor('#00ff00')
+        .setTimestamp();
+    try {
+        forge_hook.send(embed).then(() => console.log('Sent webhook successfully!'))
+        .catch(err => console.log(err.message));
+    }
+    catch (err) {
+        console.log(chalk.red("Discord Webhook Error"));
+    }   
 }
 
 async function storeHash(hash, username, amount) {
@@ -1048,12 +1064,13 @@ async function upgradeItem(username, item_number, quantity) {
 
         if (item.salvaged == undefined || item.salvaged == false) {
            //upgrade the item stats by 5% on each attribute the item has, and increase the level by 1 do not increase attributes the item does not have
-            await collection.updateOne({item_number: item_number }, { $set: {attributes: {damage: item.attributes.damage * 1.05, defense: item.attributes.defense * 1.05, engineering: item.attributes.engineering * 1.05, dodge: item.attributes.dodge * 1.05, crit: item.attributes.crit * 1.05, luck: item.attributes.luck * 1.05}, level: item.level + 1, salvaged: true} });
-            console.log('Item: ' + item_number + ' has been upgraded');
+            await collection.updateOne({item_number: item_number }, { $set: {attributes: {damage: item.attributes.damage * 1.05, defense: item.attributes.defense * 1.05, engineering: item.attributes.engineering * 1.05, dodge: item.attributes.dodge * 1.05, crit: item.attributes.crit * 1.05, luck: item.attributes.luck * 1.05}, level: item.level + 1 } });
             //store to forge log
             await db.collection('forge-log').insertOne({username: username, item_number: item_number, level: item.level, flux: quantity, time: new Date()});
             //update flux burned in stats for todays date date: "2024-01-31"
             await db.collection('stats').updateOne({date: new Date().toISOString().split('T')[0]}, { $inc: {fluxBurned: quantity} });
+            //send webhook to discord green
+            forgeWebhook('Item Upgraded', 'Item: ' + item_number + ' has been upgraded to level: ' + (item.level + 1) + ' by ' + username + ' using ' + quantity + ' FLUX');
             return true;
           
         }
