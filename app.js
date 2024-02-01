@@ -1057,7 +1057,7 @@ async function upgradeItem(username, item_number, quantity) {
         }
 
         //to upgrade an item user must send 1.5x the salvage value
-        if (quantity < value * 1.5) {
+        if (quantity < value * 1.498) {
             console.log('User: ' + username + ' did not send the correct amount of flux to upgrade item: ' + item_number);
             return false;
         }
