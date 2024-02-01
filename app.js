@@ -1053,7 +1053,6 @@ async function upgradeItem(username, item_number, quantity) {
             console.log('Item: ' + item_number + ' does not have a level');
             //make level 1
             await collection.updateOne({item_number: item_number }, { $set: {level: 1} });
-            item.level = 2;
         }
 
         //to upgrade an item user must send 1.5x the salvage value
@@ -1065,8 +1064,8 @@ async function upgradeItem(username, item_number, quantity) {
         if (item.salvaged == undefined || item.salvaged == false) {
            //upgrade the item stats by 5% on each attribute the item has, and increase the level by 1 do not increase attributes the item does not have
             await collection.updateOne({item_number: item_number }, { $set: {attributes: {damage: item.attributes.damage * 1.05, defense: item.attributes.defense * 1.05, engineering: item.attributes.engineering * 1.05, dodge: item.attributes.dodge * 1.05, crit: item.attributes.crit * 1.05, luck: item.attributes.luck * 1.05}, level: item.level + 1 } });
-            //store to forge log
-            await db.collection('forge-log').insertOne({username: username, item_number: item_number, level: item.level, flux: quantity, time: new Date()});
+            //store to forge log //add entire item json to forge log
+            await db.collection('forge-log').insertOne({username: username, item: item, flux: quantity, time: new Date()});
             //update flux burned in stats for todays date date: "2024-01-31"
             await db.collection('stats').updateOne({date: new Date().toISOString().split('T')[0]}, { $inc: {fluxBurned: parseFloat(quantity)} });
             //send webhook to discord green
