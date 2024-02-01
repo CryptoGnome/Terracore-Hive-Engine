@@ -1048,8 +1048,8 @@ async function upgradeItem(username, item_number, quantity) {
         let value = item.attributes.damage/2 + item.attributes.defense/2 + item.attributes.engineering * 5 + item.attributes.dodge * 5+ item.attributes.crit * 5 + item.attributes.luck * 10;
         console.log('Item: ' + item_number + ' has a salvage value of: ' + value);
 
-        //check if item has a level
-        if (item.level == undefined) {
+        //check if item has a level or NaN
+        if (item.level == undefined || isNaN(item.level)) {
             console.log('Item: ' + item_number + ' does not have a level');
             //make level 1
             await collection.updateOne({item_number: item_number }, { $set: {level: 1} });
