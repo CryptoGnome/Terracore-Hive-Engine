@@ -1068,7 +1068,7 @@ async function upgradeItem(username, item_number, quantity) {
             //store to forge log //add entire item json to forge log
             await db.collection('forge-log').insertOne({username: username, item: item, flux: quantity, time: new Date()});
             //update flux burned in stats for todays date date: "2024-01-31"
-            await db.collection('stats').updateOne({date: new Date().toISOString().split('T')[0]}, { $inc: {fluxBurned: parseFloat(quantity)} });
+            await db.collection('stats').updateOne({date: new Date().toISOString().split('T')[0]}, { $inc: {flux_burned: parseFloat(quantity)} });
             //send webhook to discord green
             forgeWebhook('Item Upgraded', 'Item: ' + item_number + ' has been upgraded to level: ' + (item.level + 1) + ' by ' + username + ' using ' + quantity + ' FLUX');
             return true;
