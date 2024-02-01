@@ -1025,6 +1025,30 @@ async function buy_crate(owner, quantity){
     }
 }
 
+async function applyItemStats(username){
+    //get user from players collection
+    let result = await db.collection('players').findOne({ username : username });
+    //get all items from items collection
+    for (const itemName in result.items) {
+        const item = result.items[itemName];
+        const itemAttributes = item.attributes;
+        //check if attrivutes of this item match the attrtibues of the item in the database
+        var originalItem = await db.collection('items').findOne({item_number: item.item_number});
+   
+        //compare the attributes of the item to the attributes of the item in the database
+        if (!deepEqual(itemAttributes, originalItem.attributes)) {
+            // If the attributes don't match, update the item's attributes to match the database
+            result.items[itemName].attributes = deepClone(originalItem.attributes);
+        }
+        
+    }
+
+    //update the user's items in the players collection
+    await db.collection('players').updateOne({ username : username }, { $set: { items: result.items } });
+
+    return;
+}
+
 //upgrade item from flux
 async function upgradeItem(username, item_number, quantity) {
     try{
@@ -1068,9 +1092,13 @@ async function upgradeItem(username, item_number, quantity) {
             //store to forge log //add entire item json to forge log
             await db.collection('forge-log').insertOne({username: username, item: item, flux: quantity, time: new Date()});
             //update flux burned in stats for todays date date: "2024-01-31"
-            await db.collection('stats').updateOne({date: new Date().toISOString().split('T')[0]}, { $inc: {flux_burned_forge: parseFloat(quantity)} });
+            await db.collection('stats').updateOne({date: new Date().toISOString().split('T')[0]}, { $inc: {flux_burned_forge: parseFloat(quantity)}});
             //send webhook to discord green
             forgeWebhook('Item Upgraded', 'Item: ' + item_number + ' has been upgraded to level: ' + (item.level + 1) + ' by ' + username + ' using ' + quantity + ' FLUX');
+
+            //apply item stats
+            await applyItemStats(username);
+
             return true;
           
         }
