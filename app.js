@@ -755,15 +755,15 @@ async function bossFight(username, _planet) {
 
                         if (roll2 <= 70) {
                             rarity = 'common';
-                            amount = Math.max((Math.random() * 2 * luck_mod) + 1, minThreshold); 
+                            amount = Math.max((Math.random() * 1.25 * luck_mod) + 1, minThreshold); 
                         }
                         else if (roll2 <= 90) {
                             rarity = 'uncommon';
-                            amount = Math.max((Math.random() * 1.5 * luck_mod) + 1, minThreshold); 
+                            amount = Math.max((Math.random() * 1 * luck_mod) + 1, minThreshold); 
                         }
                         else if (roll2 <= 98) {
                             rarity = 'rare';
-                            amount = Math.max((Math.random() * 1 * luck_mod) + 1, minThreshold);
+                            amount = Math.max((Math.random() * 0.75 * luck_mod) + 1, minThreshold);
                         }
                         else if (roll2 <= 99) {
                             rarity = 'epic';
